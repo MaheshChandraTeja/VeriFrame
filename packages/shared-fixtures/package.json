@@ -1,0 +1,17 @@
+{
+  "name": "@veriframe/shared-fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared test fixtures for VeriFrame modules.",
+  "type": "module",
+  "exports": {
+    "./analysis/sample-analysis-result.json": "./analysis/sample-analysis-result.json",
+    "./images/sample-receipt.jpg": "./images/sample-receipt.jpg",
+    "./images/sample-package.jpg": "./images/sample-package.jpg",
+    "./images/sample-display.jpg": "./images/sample-display.jpg"
+  },
+  "files": [
+    "analysis",
+    "images"
+  ]
+}

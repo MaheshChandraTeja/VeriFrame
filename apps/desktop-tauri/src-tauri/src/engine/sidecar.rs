@@ -1,0 +1,315 @@
+use std::collections::VecDeque;
+use std::path::PathBuf;
+use std::process::Stdio;
+use std::sync::Arc;
+
+use chrono::Utc;
+use serde::Serialize;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::{Child, Command};
+use tokio::sync::Mutex;
+
+use crate::app_paths::AppPaths;
+use crate::errors::AppError;
+use crate::security::token::SessionToken;
+
+const DEFAULT_ENGINE_PORT: u16 = 32187;
+const LOG_LIMIT: usize = 500;
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct EngineStatus {
+    pub running: bool,
+    pub port: u16,
+    pub pid: Option<u32>,
+    pub started_at: Option<String>,
+    pub token_issued: bool,
+    pub message: String,
+    pub logs_path: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SidecarCommandSpec {
+    pub program: String,
+    pub args: Vec<String>,
+    pub working_dir: Option<PathBuf>,
+    pub python_path: Option<PathBuf>,
+}
+
+#[derive(Debug)]
+struct SidecarInner {
+    child: Option<Child>,
+    port: u16,
+    token: Option<SessionToken>,
+    started_at: Option<String>,
+    logs: VecDeque<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct SidecarManager {
+    paths: AppPaths,
+    inner: Arc<Mutex<SidecarInner>>,
+}
+
+impl SidecarManager {
+    pub fn new(paths: AppPaths) -> Self {
+        Self {
+            paths,
+            inner: Arc::new(Mutex::new(SidecarInner {
+                child: None,
+                port: DEFAULT_ENGINE_PORT,
+                token: None,
+                started_at: None,
+                logs: VecDeque::new(),
+            })),
+        }
+    }
+
+    pub async fn status(&self) -> EngineStatus {
+        let mut inner = self.inner.lock().await;
+        let running = is_child_running(&mut inner.child);
+        let pid = inner.child.as_ref().and_then(Child::id);
+
+        if !running {
+            inner.child = None;
+        }
+
+        EngineStatus {
+            running,
+            port: inner.port,
+            pid,
+            started_at: inner.started_at.clone(),
+            token_issued: inner.token.is_some(),
+            message: if running {
+                "Python engine sidecar is running.".into()
+            } else {
+                "Python engine sidecar is stopped.".into()
+            },
+            logs_path: self.paths.logs_dir().to_string_lossy().to_string(),
+        }
+    }
+
+    pub async fn start(&self) -> Result<EngineStatus, AppError> {
+        let mut inner = self.inner.lock().await;
+
+        if is_child_running(&mut inner.child) {
+            drop(inner);
+            return Ok(self.status().await);
+        }
+
+        let token = SessionToken::generate();
+        let spec = build_sidecar_command_spec(inner.port, token.expose_for_local_sidecar());
+
+        tracing::info!(
+            program = %spec.program,
+            args = ?spec.args,
+            python_path = ?spec.python_path,
+            "Starting VeriFrame Python sidecar"
+        );
+
+        let mut command = Command::new(&spec.program);
+        command.args(&spec.args);
+        command.stdout(Stdio::piped());
+        command.stderr(Stdio::piped());
+
+        if let Some(working_dir) = &spec.working_dir {
+            command.current_dir(working_dir);
+        }
+
+        if let Some(python_path) = &spec.python_path {
+            command.env("PYTHONPATH", python_path);
+        }
+
+        let mut child = command.spawn().map_err(|error| {
+            AppError::EngineUnavailable(format!(
+                "Unable to start Python sidecar using '{}': {error}",
+                spec.program
+            ))
+        })?;
+
+        if let Some(stdout) = child.stdout.take() {
+            spawn_log_reader("stdout", stdout, Arc::clone(&self.inner));
+        }
+
+        if let Some(stderr) = child.stderr.take() {
+            spawn_log_reader("stderr", stderr, Arc::clone(&self.inner));
+        }
+
+        inner.started_at = Some(Utc::now().to_rfc3339());
+        inner.token = Some(token);
+        inner.child = Some(child);
+
+        drop(inner);
+
+        Ok(self.status().await)
+    }
+
+    pub async fn stop(&self) -> Result<EngineStatus, AppError> {
+        let mut inner = self.inner.lock().await;
+
+        if let Some(mut child) = inner.child.take() {
+            tracing::info!("Stopping VeriFrame Python sidecar");
+
+            if let Err(error) = child.kill().await {
+                tracing::warn!(%error, "Unable to kill sidecar process cleanly");
+            }
+
+            let _ = child.wait().await;
+        }
+
+        inner.started_at = None;
+        inner.token = None;
+
+        drop(inner);
+
+        Ok(self.status().await)
+    }
+
+    pub async fn restart(&self) -> Result<EngineStatus, AppError> {
+        let _ = self.stop().await?;
+        self.start().await
+    }
+
+    pub async fn logs(&self, tail: Option<usize>) -> Vec<String> {
+        let inner = self.inner.lock().await;
+        let limit = tail.unwrap_or(LOG_LIMIT).min(LOG_LIMIT);
+
+        inner
+            .logs
+            .iter()
+            .rev()
+            .take(limit)
+            .cloned()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect()
+    }
+
+    pub async fn client(&self) -> Option<crate::engine::client::EngineClient> {
+        let inner = self.inner.lock().await;
+
+        inner
+            .token
+            .as_ref()
+            .map(|token| crate::engine::client::EngineClient::new(
+                inner.port,
+                token.expose_for_local_sidecar().to_string(),
+            ))
+    }
+}
+
+pub fn build_sidecar_command_spec(port: u16, token: &str) -> SidecarCommandSpec {
+    if let Ok(custom_command) = std::env::var("VERIFRAME_ENGINE_COMMAND") {
+        let mut parts = custom_command
+            .split_whitespace()
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+
+        if let Some(program) = parts.first().cloned() {
+            parts.remove(0);
+            parts.extend(default_engine_args(port, token));
+
+            return SidecarCommandSpec {
+                program,
+                args: parts,
+                working_dir: None,
+                python_path: discover_dev_python_path(),
+            };
+        }
+    }
+
+    build_default_sidecar_command_spec(port, token)
+}
+
+pub fn build_default_sidecar_command_spec(port: u16, token: &str) -> SidecarCommandSpec {
+    SidecarCommandSpec {
+        program: "conda".to_string(),
+        args: vec![
+            "run".to_string(),
+            "-n".to_string(),
+            "veriframe".to_string(),
+            "python".to_string(),
+            "-m".to_string(),
+            "veriframe_core.cli".to_string(),
+            "serve".to_string(),
+            "--host".to_string(),
+            "127.0.0.1".to_string(),
+            "--port".to_string(),
+            port.to_string(),
+            "--token".to_string(),
+            token.to_string(),
+        ],
+        working_dir: None,
+        python_path: discover_dev_python_path(),
+    }
+}
+
+fn default_engine_args(port: u16, token: &str) -> Vec<String> {
+    vec![
+        "--host".to_string(),
+        "127.0.0.1".to_string(),
+        "--port".to_string(),
+        port.to_string(),
+        "--token".to_string(),
+        token.to_string(),
+    ]
+}
+
+fn discover_dev_python_path() -> Option<PathBuf> {
+    let cwd = std::env::current_dir().ok()?;
+
+    let candidates = [
+        cwd.join("engine").join("veriframe_core"),
+        cwd.join("..").join("engine").join("veriframe_core"),
+        cwd.join("..").join("..").join("engine").join("veriframe_core"),
+    ];
+
+    candidates
+        .into_iter()
+        .find(|candidate| candidate.join("veriframe_core").join("__init__.py").exists())
+}
+
+fn is_child_running(child: &mut Option<Child>) -> bool {
+    match child {
+        Some(child) => match child.try_wait() {
+            Ok(Some(_exit_status)) => false,
+            Ok(None) => true,
+            Err(error) => {
+                tracing::warn!(%error, "Unable to check sidecar process status");
+                false
+            }
+        },
+        None => false,
+    }
+}
+
+fn spawn_log_reader<R>(stream_name: &'static str, reader: R, inner: Arc<Mutex<SidecarInner>>)
+where
+    R: tokio::io::AsyncRead + Unpin + Send + 'static,
+{
+    tauri::async_runtime::spawn(async move {
+        let mut lines = BufReader::new(reader).lines();
+
+        loop {
+            match lines.next_line().await {
+                Ok(Some(line)) => {
+                    let mut inner = inner.lock().await;
+
+                    if inner.logs.len() >= LOG_LIMIT {
+                        inner.logs.pop_front();
+                    }
+
+                    inner
+                        .logs
+                        .push_back(format!("[{stream_name}] {line}"));
+                }
+                Ok(None) => break,
+                Err(error) => {
+                    tracing::warn!(%error, "Error while reading sidecar {stream_name}");
+                    break;
+                }
+            }
+        }
+    });
+}

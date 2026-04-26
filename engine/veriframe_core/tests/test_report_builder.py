@@ -1,0 +1,90 @@
+from veriframe_core.contracts.analysis import (
+    AnalysisResult,
+    AuditReceipt,
+    AuditSignature,
+    BoundingBox,
+    DetectedRegion,
+    Finding,
+    ImageMetadata,
+    ImageQualityReport,
+)
+from veriframe_core.reports.report_builder import ReportBuilder
+
+
+def make_result() -> AnalysisResult:
+    region = DetectedRegion(
+        regionId="reg_1",
+        label="price_label",
+        category="price_label",
+        confidence=0.9,
+        bbox=BoundingBox(x=10, y=20, width=100, height=40),
+        mask=None,
+        sourceModelId="test",
+        rationale="test",
+        reviewStatus="unreviewed",
+    )
+    finding = Finding(
+        findingId="find_1",
+        title="Review price label",
+        description="desc",
+        severity="medium",
+        confidence=0.9,
+        regionIds=["reg_1"],
+        evidenceRefs=["region:reg_1"],
+        recommendation="Review manually.",
+    )
+
+    return AnalysisResult(
+        schemaVersion="1.0.0",
+        runId="run_1",
+        requestId="req_1",
+        status="completed",
+        createdAt="2026-04-26T00:00:00Z",
+        completedAt="2026-04-26T00:00:00Z",
+        image=ImageMetadata(
+            imageId="img_1",
+            fileName="receipt.jpg",
+            sha256="a" * 64,
+            mimeType="image/jpeg",
+            width=640,
+            height=480,
+            sizeBytes=100,
+            exifPresent=False,
+        ),
+        modelInfo=[],
+        qualityReport=ImageQualityReport(
+            blurScore=100,
+            brightness=0.5,
+            contrast=0.25,
+            glareRisk="none",
+            resolutionAdequate=True,
+            warnings=[],
+        ),
+        regions=[region],
+        findings=[finding],
+        auditReceipt=AuditReceipt(
+            schemaVersion="1.0.0",
+            receiptId="receipt_1",
+            runId="run_1",
+            generatedAt="2026-04-26T00:00:00Z",
+            inputHash="a" * 64,
+            resultHash="b" * 64,
+            configHash="c" * 64,
+            modelRefs=[],
+            artifactHashes=[],
+            signature=AuditSignature(
+                algorithm="sha256-local-integrity",
+                value="d" * 64,
+            ),
+        ),
+        warnings=[],
+    )
+
+
+def test_report_builder_generates_visual_report() -> None:
+    report = ReportBuilder().build(make_result())
+
+    assert report.runId == "run_1"
+    assert report.findings[0].findingId == "find_1"
+    assert report.evidenceMap.regions[0].regionId == "reg_1"
+    assert report.sections[0].sectionId == "severity_medium"

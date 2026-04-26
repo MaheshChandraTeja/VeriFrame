@@ -1,0 +1,13 @@
+CREATE INDEX IF NOT EXISTS idx_analysis_runs_created_at ON analysis_runs(created_at);
+CREATE INDEX IF NOT EXISTS idx_analysis_runs_status ON analysis_runs(status);
+CREATE INDEX IF NOT EXISTS idx_analysis_runs_input_hash ON analysis_runs(input_hash);
+CREATE INDEX IF NOT EXISTS idx_images_sha256 ON images(sha256);
+CREATE INDEX IF NOT EXISTS idx_findings_run_id ON findings(run_id);
+CREATE INDEX IF NOT EXISTS idx_findings_severity ON findings(severity);
+CREATE INDEX IF NOT EXISTS idx_regions_run_id ON regions(run_id);
+CREATE INDEX IF NOT EXISTS idx_regions_category ON regions(category);
+CREATE INDEX IF NOT EXISTS idx_model_runs_run_id ON model_runs(run_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_run_id ON audit_logs(run_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_report_artifacts_run_id ON report_artifacts(run_id);
+CREATE INDEX IF NOT EXISTS idx_report_artifacts_format ON report_artifacts(format);

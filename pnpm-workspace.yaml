@@ -1,0 +1,6 @@
+packages:
+  - "apps/ui-angular"
+  - "apps/desktop-tauri"
+  - "packages/contracts"
+  - "packages/shared-fixtures"
+  - "tools/*"

@@ -1,0 +1,44 @@
+{
+  "name": "veriframe",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first visual audit engine powered by TorchVision.",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.19.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev:ui": "pnpm --filter @veriframe/ui-angular dev",
+    "dev:desktop": "pnpm --filter @veriframe/desktop-tauri dev",
+    "dev:engine": "conda run -n veriframe python tools/dev/run_engine.py serve --host 127.0.0.1 --port 32187 --token dev-token",
+    "test": "vitest run && pnpm --filter @veriframe/ui-angular test && pnpm test:engine",
+    "test:contracts": "vitest run",
+    "test:ui": "pnpm --filter @veriframe/ui-angular test",
+    "test:engine": "conda run -n veriframe pytest engine/veriframe_core/tests",
+    "test:desktop": "pnpm --filter @veriframe/desktop-tauri test",
+    "lint": "pnpm lint:ts && pnpm lint:py",
+    "lint:ts": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:ui": "pnpm --filter @veriframe/ui-angular lint",
+    "lint:py": "conda run -n veriframe ruff check engine/veriframe_core",
+    "format": "prettier --write . && conda run -n veriframe ruff format engine/veriframe_core",
+    "format:check": "prettier --check . && conda run -n veriframe ruff format --check engine/veriframe_core",
+    "build": "pnpm --filter @veriframe/contracts build && pnpm --filter @veriframe/ui-angular build",
+    "package": "pnpm --filter @veriframe/desktop-tauri package",
+    "conda:create": "conda env create -f environment.yml",
+    "conda:update": "conda env update -f environment.yml --prune",
+    "clean": "rimraf node_modules dist coverage .angular .cache test-results"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0",
+    "vitest": "^2.1.8"
+  }
+}

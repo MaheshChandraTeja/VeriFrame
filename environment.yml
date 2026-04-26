@@ -1,0 +1,26 @@
+name: veriframe
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pytorch
+  - torchvision
+  - cpuonly
+  - numpy
+  - pillow
+  - opencv
+  - pydantic>=2
+  - fastapi
+  - uvicorn
+  - sqlalchemy
+  - httpx
+  - pytest
+  - ruff
+  - mypy
+  - pyright
+  - sqlite
+  - pip:
+      - pytest-cov

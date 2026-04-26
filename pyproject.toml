@@ -1,0 +1,64 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+extend-exclude = [
+  "node_modules",
+  "dist",
+  "target",
+  "models/checkpoints",
+  "datasets/raw",
+  "datasets/processed"
+]
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+  "N",
+  "S",
+  "C4",
+  "SIM",
+  "RUF"
+]
+ignore = [
+  "S101"
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra --strict-markers --strict-config"
+testpaths = [
+  "engine/veriframe_core/tests"
+]
+python_files = [
+  "test_*.py",
+  "*_test.py"
+]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.pyright]
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"
+exclude = [
+  "node_modules",
+  "dist",
+  "target",
+  "models/checkpoints",
+  "datasets/raw",
+  "datasets/processed"
+]

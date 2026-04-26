@@ -1,0 +1,17 @@
+{
+  "name": "@veriframe/desktop-tauri",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tauri desktop shell for VeriFrame.",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "package": "tauri build",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "check": "cargo check --manifest-path src-tauri/Cargo.toml"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.6.0"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "modelId": "product_package_detector",
+  "name": "Product Package Detector",
+  "version": "0.1.0",
+  "task": "detection",
+  "modelFamily": "fasterrcnn",
+  "labels": [
+    "product_package",
+    "shipping_label",
+    "product_label",
+    "barcode",
+    "qr_code"
+  ],
+  "configPath": "models/configs/product-package-detector.json",
+  "checkpointPath": null,
+  "checkpointRequired": false,
+  "pretrained": false,
+  "preprocessing": {
+    "resizeShortSide": 800,
+    "centerCrop": null,
+    "maxSide": 2048,
+    "normalize": false
+  },
+  "outputParser": "detection",
+  "description": "Product/package detector profile for physical evidence review."
+}

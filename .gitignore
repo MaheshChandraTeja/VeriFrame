@@ -1,0 +1,385 @@
+# ==============================================================================
+# VeriFrame .gitignore
+# Keep source, contracts, docs, migrations, configs, fixtures, and lockfiles.
+# Exclude dependencies, caches, local data, generated artifacts, builds, logs,
+# model binaries, benchmark outputs, and machine-specific files.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Operating system files
+# ------------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100/
+.Trashes/
+ehthumbs.db
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ------------------------------------------------------------------------------
+# Editor and IDE state
+# ------------------------------------------------------------------------------
+.idea/
+.fleet/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.swp
+*.swo
+*~
+
+# ------------------------------------------------------------------------------
+# Secrets and local environment files
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+*.local
+*.secret
+*.secrets
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.csr
+*.token
+*.credentials
+
+# ------------------------------------------------------------------------------
+# Node / pnpm / npm / yarn dependencies and caches
+# ------------------------------------------------------------------------------
+node_modules/
+**/node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Keep package manager lockfiles tracked.
+!package-lock.json
+!pnpm-lock.yaml
+!yarn.lock
+
+# ------------------------------------------------------------------------------
+# TypeScript / JavaScript / Angular / Vite outputs
+# ------------------------------------------------------------------------------
+dist/
+**/dist/
+build/
+**/build/
+out/
+**/out/
+out-tsc/
+**/out-tsc/
+.angular/
+**/.angular/
+.cache/
+**/.cache/
+.vite/
+**/.vite/
+.turbo/
+.parcel-cache/
+.eslintcache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# ------------------------------------------------------------------------------
+# Test and coverage outputs
+# ------------------------------------------------------------------------------
+coverage/
+**/coverage/
+.nyc_output/
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+blob-report/
+**/blob-report/
+junit.xml
+*.junit.xml
+*.lcov
+lcov.info
+htmlcov/
+**/htmlcov/
+.vitest/
+**/.vitest/
+
+# ------------------------------------------------------------------------------
+# Python bytecode, caches, virtualenvs, and packaging outputs
+# ------------------------------------------------------------------------------
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+**/*.egg-info/
+.eggs/
+.pytest_cache/
+**/.pytest_cache/
+.ruff_cache/
+**/.ruff_cache/
+.mypy_cache/
+**/.mypy_cache/
+.pyright/
+**/.pyright/
+.pyre/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+conda-meta/
+.conda/
+
+pip-wheel-metadata/
+pip-log.txt
+pip-delete-this-directory.txt
+wheelhouse/
+site/
+
+# Python build/distribution artifacts
+*.manifest
+*.spec
+*.whl
+sdist/
+*.tar.gz
+
+# ------------------------------------------------------------------------------
+# Rust / Cargo / Tauri outputs
+# ------------------------------------------------------------------------------
+target/
+**/target/
+Cargo.lock.bak
+*.rlib
+*.rmeta
+*.profraw
+*.profdata
+
+# Keep app lockfiles tracked for reproducible desktop builds.
+!Cargo.lock
+!**/Cargo.lock
+
+# Tauri generated/build directories and packaged installers
+**/src-tauri/target/
+**/src-tauri/gen/schemas/
+**/src-tauri/.tauri/
+**/src-tauri/.cargo/
+*.msi
+*.msix
+*.app
+*.dmg
+*.pkg
+*.AppImage
+*.deb
+*.rpm
+*.snap
+*.exe
+*.dll
+*.pdb
+
+# ------------------------------------------------------------------------------
+# General build, release, and archive artifacts
+# ------------------------------------------------------------------------------
+release/
+releases/
+artifacts/
+generated/
+generated-artifacts/
+tmp/
+temp/
+.tmp/
+.temp/
+*.zip
+*.7z
+*.rar
+*.tar
+*.tgz
+*.gz
+*.bz2
+*.xz
+
+# ------------------------------------------------------------------------------
+# VeriFrame local app data, reports, exports, and benchmark artifacts
+# ------------------------------------------------------------------------------
+.veriframe/
+.veriframe-*/
+.veriframe-pipeline-bench/
+.veriframe-bench.sqlite3
+veriframe-data/
+app-data/
+local-data/
+storage/local/
+storage/app-data/
+storage/tmp/
+storage/temp/
+storage/reports/
+storage/exports/
+storage/logs/
+reports/
+generated-reports/
+report-artifacts/
+exports/
+evidence-output/
+evidence-artifacts/
+review-datasets/
+analysis-runs/
+audit-receipts/
+
+# Generated preview/report scratch output.
+preview/
+
+# VeriFrame custom/local generated bundles.
+*.vfr
+*.vfreport
+*.vfreceipt
+
+# ------------------------------------------------------------------------------
+# Databases and local persistence
+# ------------------------------------------------------------------------------
+*.sqlite
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+*.db
+*.db-shm
+*.db-wal
+*.mdb
+*.ldb
+
+# Keep migration source files tracked.
+!storage/migrations/*.sql
+
+# ------------------------------------------------------------------------------
+# Logs and runtime diagnostics
+# ------------------------------------------------------------------------------
+logs/
+**/logs/
+log/
+**/log/
+*.log
+*.log.*
+debug.log
+error.log
+trace.log
+uvicorn.log
+tauri.log
+veriframe.log
+
+# ------------------------------------------------------------------------------
+# ML models, checkpoints, ONNX exports, and large generated tensors
+# ------------------------------------------------------------------------------
+models/checkpoints/
+models/exported/
+models/cache/
+models/tmp/
+models/temp/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.ort
+*.tflite
+*.pb
+*.h5
+*.keras
+*.safetensors
+*.bin
+*.npy
+*.npz
+*.pkl
+*.pickle
+
+# Keep lightweight model metadata tracked.
+!models/configs/*.json
+!models/model_cards/*.md
+
+# ------------------------------------------------------------------------------
+# Datasets: keep schemas, guides, and small curated fixtures; ignore local corpora
+# ------------------------------------------------------------------------------
+datasets/raw/
+datasets/processed/
+datasets/local/
+datasets/private/
+datasets/cache/
+datasets/tmp/
+datasets/temp/
+datasets/exports/
+datasets/review-datasets/
+datasets/**/*.zip
+datasets/**/*.tar
+datasets/**/*.tar.gz
+datasets/**/*.tgz
+datasets/**/*.7z
+
+!datasets/schemas/**
+!datasets/annotation_guides/**
+!datasets/samples/**
+
+# ------------------------------------------------------------------------------
+# Image/report scratch files from manual testing
+# ------------------------------------------------------------------------------
+fake.*
+scratch.*
+test-output/
+manual-output/
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# ------------------------------------------------------------------------------
+# Profiling, benchmark, and performance files
+# ------------------------------------------------------------------------------
+benchmark-results/
+bench-results/
+benchmarks/output/
+*.prof
+*.profile
+*.perf
+*.trace
+*.speedscope.json
+
+# ------------------------------------------------------------------------------
+# Misc local tool state
+# ------------------------------------------------------------------------------
+.history/
+.local/
+.sandbox/
+.codex/
+.claude/
+.cursor/
+.aider*

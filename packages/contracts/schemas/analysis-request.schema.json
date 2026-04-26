@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://veriframe.local/schemas/analysis-request.schema.json",
+  "title": "AnalysisRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "requestId",
+    "source",
+    "workflow",
+    "requestedTasks",
+    "modelProfileIds",
+    "options",
+    "createdAt"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "requestId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "path"
+      ],
+      "properties": {
+        "type": {
+          "const": "image_file"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      }
+    },
+    "workflow": {
+      "type": "string",
+      "enum": [
+        "visual_audit",
+        "receipt_verification",
+        "package_evidence",
+        "device_display",
+        "screenshot_review"
+      ]
+    },
+    "requestedTasks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "quality",
+          "detection",
+          "segmentation",
+          "classification",
+          "evidence_overlay"
+        ]
+      }
+    },
+    "modelProfileIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "confidenceThreshold",
+        "maxImageSizePx",
+        "includeExif",
+        "exportArtifacts"
+      ],
+      "properties": {
+        "confidenceThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "maxImageSizePx": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 8192
+        },
+        "includeExif": {
+          "type": "boolean"
+        },
+        "exportArtifacts": {
+          "type": "boolean"
+        }
+      }
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "modelId": "receipt_region_detector",
+  "name": "Receipt Region Detector",
+  "version": "0.1.0",
+  "task": "detection",
+  "modelFamily": "fasterrcnn",
+  "labels": [
+    "receipt_header",
+    "line_item_block",
+    "price_label",
+    "barcode",
+    "qr_code",
+    "unreadable_region"
+  ],
+  "configPath": "models/configs/receipt-region-detector.json",
+  "checkpointPath": null,
+  "checkpointRequired": false,
+  "pretrained": false,
+  "preprocessing": {
+    "resizeShortSide": 800,
+    "centerCrop": null,
+    "maxSide": 2048,
+    "normalize": false
+  },
+  "outputParser": "detection",
+  "description": "Receipt block detector profile for local visual audit workflows."
+}

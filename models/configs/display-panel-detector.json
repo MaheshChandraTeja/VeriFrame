@@ -1,0 +1,26 @@
+{
+  "modelId": "display_panel_detector",
+  "name": "Display Panel Detector",
+  "version": "0.1.0",
+  "task": "detection",
+  "modelFamily": "fasterrcnn",
+  "labels": [
+    "display_panel",
+    "reading_value",
+    "unit_label",
+    "warning_icon",
+    "unreadable_region"
+  ],
+  "configPath": "models/configs/display-panel-detector.json",
+  "checkpointPath": null,
+  "checkpointRequired": false,
+  "pretrained": false,
+  "preprocessing": {
+    "resizeShortSide": 800,
+    "centerCrop": null,
+    "maxSide": 2048,
+    "normalize": false
+  },
+  "outputParser": "detection",
+  "description": "Device/treadmill/display panel detector profile."
+}

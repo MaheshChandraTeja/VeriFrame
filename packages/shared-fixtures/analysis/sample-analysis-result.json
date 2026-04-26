@@ -1,0 +1,213 @@
+{
+  "schemaVersion": "1.0.0",
+  "runId": "run_sample_001",
+  "requestId": "req_sample_001",
+  "status": "completed",
+  "createdAt": "2026-04-26T08:00:00.000Z",
+  "completedAt": "2026-04-26T08:00:03.000Z",
+  "image": {
+    "imageId": "img_sample_receipt_001",
+    "fileName": "sample-receipt.jpg",
+    "sha256": "8065144f3cffc9a14527b25a5399ac95f357a08b158f73f0fee9c2a880143aad",
+    "mimeType": "image/jpeg",
+    "width": 1280,
+    "height": 720,
+    "sizeBytes": 48211,
+    "exifPresent": false
+  },
+  "modelInfo": [
+    {
+      "modelId": "receipt-region-detector",
+      "name": "Receipt Region Detector",
+      "version": "0.1.0",
+      "task": "detection",
+      "framework": "torchvision",
+      "device": "cpu",
+      "labels": [
+        "receipt_header",
+        "line_item_block",
+        "price_label"
+      ],
+      "configHash": "2ce34d77d37a34415aad1f83fa9df23860c34da4643d71968324fff505b39867",
+      "checkpointHash": "0f7064d9ed404c6eeaf815324e3f490dbe8b6d1a16f31c400e9e608747df6f75"
+    }
+  ],
+  "qualityReport": {
+    "blurScore": 0.18,
+    "brightness": 0.62,
+    "contrast": 0.74,
+    "glareRisk": "low",
+    "resolutionAdequate": true,
+    "warnings": [
+      "Minor glare risk detected near the upper-right region."
+    ]
+  },
+  "regions": [
+    {
+      "regionId": "reg_header_001",
+      "label": "receipt header",
+      "category": "receipt_header",
+      "confidence": 0.93,
+      "bbox": {
+        "x": 82,
+        "y": 38,
+        "width": 612,
+        "height": 96
+      },
+      "mask": {
+        "format": "polygon",
+        "points": [
+          [
+            82,
+            38
+          ],
+          [
+            694,
+            38
+          ],
+          [
+            694,
+            134
+          ],
+          [
+            82,
+            134
+          ]
+        ]
+      },
+      "sourceModelId": "receipt-region-detector",
+      "rationale": "High-confidence rectangular text region at the top of the receipt.",
+      "reviewStatus": "unreviewed"
+    },
+    {
+      "regionId": "reg_items_001",
+      "label": "line item block",
+      "category": "line_item_block",
+      "confidence": 0.89,
+      "bbox": {
+        "x": 94,
+        "y": 168,
+        "width": 708,
+        "height": 286
+      },
+      "mask": {
+        "format": "polygon",
+        "points": [
+          [
+            94,
+            168
+          ],
+          [
+            802,
+            168
+          ],
+          [
+            802,
+            454
+          ],
+          [
+            94,
+            454
+          ]
+        ]
+      },
+      "sourceModelId": "receipt-region-detector",
+      "rationale": "Dense multi-line text region likely containing receipt items.",
+      "reviewStatus": "unreviewed"
+    },
+    {
+      "regionId": "reg_price_001",
+      "label": "total price block",
+      "category": "price_label",
+      "confidence": 0.91,
+      "bbox": {
+        "x": 528,
+        "y": 493,
+        "width": 276,
+        "height": 84
+      },
+      "mask": {
+        "format": "polygon",
+        "points": [
+          [
+            528,
+            493
+          ],
+          [
+            804,
+            493
+          ],
+          [
+            804,
+            577
+          ],
+          [
+            528,
+            577
+          ]
+        ]
+      },
+      "sourceModelId": "receipt-region-detector",
+      "rationale": "Detected high-contrast region near receipt footer matching total price placement.",
+      "reviewStatus": "unreviewed"
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "find_quality_001",
+      "title": "Image quality is usable",
+      "description": "The image has adequate resolution and contrast for visual audit review.",
+      "severity": "info",
+      "confidence": 0.96,
+      "regionIds": [],
+      "evidenceRefs": [
+        "quality:img_sample_receipt_001"
+      ],
+      "recommendation": "Proceed with analysis. Human review is optional for image quality."
+    },
+    {
+      "findingId": "find_price_001",
+      "title": "Total price region detected",
+      "description": "A likely total price block was detected near the receipt footer.",
+      "severity": "medium",
+      "confidence": 0.91,
+      "regionIds": [
+        "reg_price_001"
+      ],
+      "evidenceRefs": [
+        "overlay:reg_price_001",
+        "crop:reg_price_001"
+      ],
+      "recommendation": "Review this region when reconciling totals or discounts."
+    }
+  ],
+  "auditReceipt": {
+    "schemaVersion": "1.0.0",
+    "receiptId": "receipt_sample_001",
+    "runId": "run_sample_001",
+    "generatedAt": "2026-04-26T08:00:03.000Z",
+    "inputHash": "8065144f3cffc9a14527b25a5399ac95f357a08b158f73f0fee9c2a880143aad",
+    "resultHash": "0c11357eab5e4fdf630a602c30ece489c6b9def14bdbe28c07873dae4b5aa1d2",
+    "configHash": "2ce34d77d37a34415aad1f83fa9df23860c34da4643d71968324fff505b39867",
+    "modelRefs": [
+      {
+        "modelId": "receipt-region-detector",
+        "version": "0.1.0",
+        "configHash": "2ce34d77d37a34415aad1f83fa9df23860c34da4643d71968324fff505b39867",
+        "checkpointHash": "0f7064d9ed404c6eeaf815324e3f490dbe8b6d1a16f31c400e9e608747df6f75"
+      }
+    ],
+    "artifactHashes": [
+      {
+        "artifactId": "artifact_overlay_001",
+        "path": "reports/run_sample_001/evidence-overlay.png",
+        "sha256": "af48555f80cfa54c10d5ffa1e16c2983d925646a2601abc69a6916d858a5530c"
+      }
+    ],
+    "signature": {
+      "algorithm": "sha256-local-integrity",
+      "value": "8817534fa98169264a83cff7dbbd478bf49d277ee892befe3a8c82c8bac07f91"
+    }
+  },
+  "warnings": []
+}

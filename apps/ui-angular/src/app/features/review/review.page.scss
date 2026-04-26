@@ -1,0 +1,102 @@
+.vf-review-page {
+  display: grid;
+  gap: 20px;
+}
+
+.vf-review-page__hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border: 1px solid var(--vf-border);
+  border-radius: var(--vf-radius-xl);
+  background:
+    radial-gradient(circle at 12% 0%, var(--vf-primary-soft), transparent 34rem),
+    var(--vf-surface);
+  box-shadow: var(--vf-shadow-md);
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.vf-review-page__hero span {
+  display: inline-flex;
+  border: 1px solid var(--vf-border);
+  border-radius: 999px;
+  background: var(--vf-surface);
+  padding: 7px 10px;
+  color: var(--vf-primary);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.vf-review-page__hero h2 {
+  max-width: 760px;
+  margin: 14px 0 0;
+  font-size: clamp(32px, 6vw, 62px);
+  line-height: 0.95;
+  letter-spacing: -0.08em;
+}
+
+.vf-review-page__hero p {
+  max-width: 720px;
+  margin: 14px 0 0;
+  color: var(--vf-text-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.vf-review-page__actions,
+.vf-review-page__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vf-review-page__toolbar button {
+  border: 1px solid var(--vf-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--vf-text-soft);
+  cursor: pointer;
+  font-weight: 900;
+  padding: 8px 11px;
+}
+
+.vf-review-page__toolbar button.is-active {
+  border-color: var(--vf-primary);
+  background: var(--vf-primary-soft);
+  color: var(--vf-primary);
+}
+
+.vf-review-page__message {
+  border: 1px solid var(--vf-border);
+  border-radius: var(--vf-radius-md);
+  background: var(--vf-surface);
+  color: var(--vf-text-soft);
+  padding: 13px 15px;
+}
+
+.vf-review-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.vf-review-page__main,
+.vf-review-page__side {
+  display: grid;
+  gap: 18px;
+}
+
+@media (max-width: 1080px) {
+  .vf-review-page__hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .vf-review-page__layout {
+    grid-template-columns: 1fr;
+  }
+}

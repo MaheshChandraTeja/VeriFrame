@@ -1,0 +1,27 @@
+{
+  "modelId": "damage_detector",
+  "name": "Package Damage Detector",
+  "version": "0.1.0",
+  "task": "detection",
+  "modelFamily": "fasterrcnn",
+  "labels": [
+    "damage_zone",
+    "tear",
+    "crush",
+    "puncture",
+    "water_damage",
+    "tamper_evidence"
+  ],
+  "configPath": "models/configs/package-damage-detector.json",
+  "checkpointPath": null,
+  "checkpointRequired": false,
+  "pretrained": false,
+  "preprocessing": {
+    "resizeShortSide": 800,
+    "centerCrop": null,
+    "maxSide": 2048,
+    "normalize": false
+  },
+  "outputParser": "detection",
+  "description": "Package damage/tamper detector profile."
+}
