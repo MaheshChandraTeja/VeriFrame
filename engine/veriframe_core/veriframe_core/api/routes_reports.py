@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import shutil
+import sqlite3
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
@@ -159,3 +161,48 @@ async def load_result(request: Request, run_id: str):
         return result
 
     raise NotFoundError(f"Analysis result not found: {run_id}")
+
+@router.delete("/{run_id}")
+async def delete_report(request: Request, run_id: str) -> dict[str, object]:
+    settings = request.app.state.settings
+    deleted: dict[str, object] = {
+        "databaseRows": {},
+        "reportDirectory": False,
+        "memoryCache": False,
+    }
+
+    if hasattr(request.app.state, "analysis_results"):
+        deleted["memoryCache"] = request.app.state.analysis_results.pop(run_id, None) is not None
+
+    db = Database(settings=settings)
+    db.initialize()
+
+    with db.connection() as connection:
+        for table in [
+            "report_artifacts",
+            "audit_logs",
+            "model_runs",
+            "regions",
+            "findings",
+            "images",
+            "analysis_runs",
+            "region_corrections",
+            "finding_reviews",
+        ]:
+            try:
+                cursor = connection.execute(f"DELETE FROM {table} WHERE run_id = ?", (run_id,))
+                deleted["databaseRows"][table] = cursor.rowcount
+            except sqlite3.OperationalError:
+                deleted["databaseRows"][table] = "table_missing_or_no_run_id"
+
+    assert settings.reports_dir is not None
+    report_dir = settings.reports_dir / run_id
+    if report_dir.exists():
+        shutil.rmtree(report_dir)
+        deleted["reportDirectory"] = True
+
+    return {
+        "ok": True,
+        "runId": run_id,
+        "deleted": deleted,
+    }

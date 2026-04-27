@@ -292,7 +292,7 @@ export class DashboardPageComponent {
     {
       label: "Engine",
       value: this.engineOnline() ? "Online" : "Offline",
-      hint: this.engineOnline() ? "local API reachable" : "start pnpm dev:engine"
+      hint: this.engineOnline() ? "local API reachable" : "Start the Engine"
     },
     {
       label: "Model profiles",

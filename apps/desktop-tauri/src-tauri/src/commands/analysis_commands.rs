@@ -7,6 +7,9 @@ use crate::errors::AppError;
 use crate::security::path_guard::validate_existing_image_file;
 use crate::state::{AnalysisRunRecord, AppState};
 
+const DEFAULT_ENGINE_PORT: u16 = 32187;
+const DEFAULT_DEV_TOKEN: &str = "dev-token";
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateAnalysisRunRequest {
@@ -45,13 +48,19 @@ pub async fn submit_analysis_request(
     state: State<'_, AppState>,
     request: Value,
 ) -> Result<Value, AppError> {
-    let Some(client) = state.sidecar.client().await else {
-        return Err(AppError::EngineUnavailable(
-            "Python engine is not running. Start the engine after Module 4 is implemented.".into(),
-        ));
-    };
+    if let Some(client) = state.sidecar.client().await {
+        match client.post_json("/analysis", &request).await {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                tracing::warn!(
+                    error = %error,
+                    "Managed analysis engine request failed; trying external local engine"
+                );
+            }
+        }
+    }
 
-    client.post_json("/analysis", &request).await
+    external_json_request(reqwest::Method::POST, "/analysis", Some(&request)).await
 }
 
 #[tauri::command]
@@ -102,10 +111,79 @@ pub async fn load_analysis_result(
     state: State<'_, AppState>,
     run_id: String,
 ) -> Result<Value, AppError> {
-    let runs = state.analysis_runs.lock().await;
-    let run = runs
-        .get(&run_id)
-        .ok_or_else(|| AppError::NotFound(format!("Analysis run not found: {run_id}")))?;
+    if let Some(client) = state.sidecar.client().await {
+        match client.get_json(&format!("/analysis/{run_id}")).await {
+            Ok(value) => return Ok(value),
+            Err(error) => {
+                tracing::warn!(
+                    run_id,
+                    error = %error,
+                    "Managed analysis result load failed; trying external local engine"
+                );
+            }
+        }
+    }
 
-    serde_json::to_value(run).map_err(|error| AppError::Internal(error.to_string()))
+    match external_json_request(
+        reqwest::Method::GET,
+        &format!("/analysis/{run_id}"),
+        None,
+    )
+    .await
+    {
+        Ok(value) => Ok(value),
+        Err(engine_error) => {
+            let runs = state.analysis_runs.lock().await;
+            let run = runs.get(&run_id).ok_or(engine_error)?;
+            serde_json::to_value(run).map_err(|error| AppError::Internal(error.to_string()))
+        }
+    }
+}
+
+async fn external_json_request(
+    method: reqwest::Method,
+    path: &str,
+    body: Option<&Value>,
+) -> Result<Value, AppError> {
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(120))
+        .build()
+        .map_err(|error| AppError::EngineUnavailable(error.to_string()))?;
+
+    let mut request = client
+        .request(method, external_url(path))
+        .header("x-veriframe-token", DEFAULT_DEV_TOKEN);
+
+    if let Some(body) = body {
+        request = request.json(body);
+    }
+
+    let response = request.send().await.map_err(|error| {
+        AppError::EngineUnavailable(format!(
+            "Local analysis engine is not reachable at 127.0.0.1:{DEFAULT_ENGINE_PORT}. Start VeriFrame Engine and try again. Details: {error}"
+        ))
+    })?;
+
+    let status = response.status();
+
+    if !status.is_success() {
+        let body = response.text().await.unwrap_or_default();
+
+        return Err(AppError::EngineUnavailable(format!(
+            "Local analysis engine request failed with status {status}: {body}"
+        )));
+    }
+
+    response
+        .json::<Value>()
+        .await
+        .map_err(|error| AppError::EngineUnavailable(error.to_string()))
+}
+
+fn external_url(path: &str) -> String {
+    format!(
+        "http://127.0.0.1:{}/{}",
+        DEFAULT_ENGINE_PORT,
+        path.trim_start_matches('/')
+    )
 }

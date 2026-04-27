@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 import type { DetectedRegion, Finding } from "@veriframe/contracts";
 
 import { AppButtonComponent } from "../../shared/ui/button/app-button.component";
@@ -25,7 +25,8 @@ import { ReviewStore } from "./state/review.store";
     AnnotationCanvasComponent,
     FindingReviewControlsComponent,
     LabelEditorComponent,
-    ReviewSummaryComponent
+    ReviewSummaryComponent,
+    RouterLink
   ],
   template: `
     <section class="vf-review-page">
@@ -35,10 +36,14 @@ import { ReviewStore } from "./state/review.store";
           <h2>Human review and correction.</h2>
           <p>
             Correct boxes and labels, review findings, and export local training datasets.
+            No cloud confessional required, mercifully.
           </p>
         </div>
 
         <div class="vf-review-page__actions">
+          <a class="vf-review-page__back-link" [routerLink]="['/analysis', runId()]">
+            Back to analysis
+          </a>
           <vf-button variant="secondary" (clicked)="reload()">Reload</vf-button>
           <vf-button variant="primary" (clicked)="saveAll()">Save review</vf-button>
           <vf-button variant="ghost" (clicked)="exportDataset()">Export dataset</vf-button>
@@ -46,11 +51,15 @@ import { ReviewStore } from "./state/review.store";
       </div>
 
       @if (store.error()) {
-        <p class="vf-review-page__message">{{ store.error() }}</p>
+        <p class="vf-review-page__message is-error">{{ store.error() }}</p>
       }
 
       @if (store.savedMessage()) {
-        <p class="vf-review-page__message">{{ store.savedMessage() }}</p>
+        <p class="vf-review-page__message is-success">{{ store.savedMessage() }}</p>
+      }
+
+      @if (store.loading()) {
+        <p class="vf-review-page__message">Loading review session…</p>
       }
 
       <vf-review-summary
@@ -122,12 +131,14 @@ export class ReviewPageComponent {
     }
 
     this.store.loading.set(true);
+    this.store.error.set(null);
+    this.store.savedMessage.set(null);
 
     try {
       const response = await this.reviewService.getReviewSession(runId);
       this.store.load(response.result, response.session);
     } catch (error) {
-      this.store.error.set(error instanceof Error ? error.message : "Unable to load review session.");
+      this.store.error.set(this.errorMessage(error, "Unable to load review session."));
     } finally {
       this.store.loading.set(false);
     }
@@ -164,12 +175,14 @@ export class ReviewPageComponent {
       ...region,
       reviewStatus: "rejected"
     } as DetectedRegion;
+
     const correction = createRegionCorrection({
       runId: this.runId() ?? "",
       originalRegion: region,
       correctedRegion: corrected,
       notes: "Region marked for deletion."
     });
+
     this.store.queueCorrection({ ...correction, action: "delete" });
   }
 
@@ -204,16 +217,20 @@ export class ReviewPageComponent {
       return;
     }
 
+    this.store.error.set(null);
+
     try {
       for (const correction of corrections) {
         await this.reviewService.saveRegionCorrection(runId, correction);
       }
+
       for (const review of reviews) {
         await this.reviewService.saveFindingReview(runId, review);
       }
+
       this.store.markSaved(corrections, reviews);
     } catch (error) {
-      this.store.error.set(error instanceof Error ? error.message : "Unable to save review changes.");
+      this.store.error.set(this.errorMessage(error, "Unable to save review changes."));
     }
   }
 
@@ -228,11 +245,13 @@ export class ReviewPageComponent {
       await this.saveAll();
     }
 
+    this.store.error.set(null);
+
     try {
       const result = await this.reviewService.exportDataset(runId);
       this.store.savedMessage.set(`Dataset exported: ${result.datasetPath}`);
     } catch (error) {
-      this.store.error.set(error instanceof Error ? error.message : "Unable to export dataset.");
+      this.store.error.set(this.errorMessage(error, "Unable to export dataset."));
     }
   }
 
@@ -250,5 +269,30 @@ export class ReviewPageComponent {
         correctedRegion: corrected
       })
     );
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === "string") {
+      return error;
+    }
+
+    if (error && typeof error === "object") {
+      const maybeMessage = (error as { message?: unknown }).message;
+      if (typeof maybeMessage === "string") {
+        return maybeMessage;
+      }
+
+      try {
+        return JSON.stringify(error);
+      } catch {
+        return fallback;
+      }
+    }
+
+    return fallback;
   }
 }

@@ -1,46 +1,54 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VeriFrame",
-  "version": "0.1.0",
-  "identifier": "com.kairais.veriframe",
-  "build": {
-    "beforeDevCommand": "pnpm --dir ../.. --filter @veriframe/ui-angular dev",
-    "devUrl": "http://127.0.0.1:4200",
-    "beforeBuildCommand": "pnpm --dir ../.. --filter @veriframe/ui-angular build",
-    "frontendDist": "../../../dist/ui-angular/browser"
-  },
-  "app": {
-    "windows": [
-      {
-        "label": "main",
-        "title": "VeriFrame",
-        "width": 1280,
-        "height": 820,
-        "minWidth": 980,
-        "minHeight": 680,
-        "resizable": true,
-        "fullscreen": false,
-        "center": true,
-        "decorations": true,
-        "transparent": false
-      }
-    ],
-    "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' http://127.0.0.1:*"
-    }
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "category": "DeveloperTool",
-    "copyright": "Copyright © Kairais Tech",
-    "shortDescription": "Local-first visual audit engine",
-    "longDescription": "VeriFrame is a local-first visual audit engine powered by TorchVision.",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.ico"
-    ]
-  }
+    "$schema":  "https://schema.tauri.app/config/2",
+    "productName":  "VeriFrame",
+    "version":  "0.1.0",
+    "identifier":  "com.kairais.veriframe",
+    "build":  {
+                  "beforeDevCommand":  "pnpm --dir ../.. --filter @veriframe/ui-angular dev",
+                  "devUrl":  "http://127.0.0.1:4200",
+                  "beforeBuildCommand":  "pnpm --dir ../.. --filter @veriframe/ui-angular build",
+                  "frontendDist":  "../../../dist/ui-angular/browser"
+              },
+    "app":  {
+                "windows":  [
+                                {
+                                    "label":  "main",
+                                    "title":  "VeriFrame",
+                                    "width":  1280,
+                                    "height":  820,
+                                    "minWidth":  980,
+                                    "minHeight":  680,
+                                    "resizable":  true,
+                                    "fullscreen":  false,
+                                    "center":  true,
+                                    "decorations":  true,
+                                    "transparent":  false
+                                }
+                            ],
+                "security":  {
+                                 "csp":  "default-src \u0027self\u0027 customprotocol: asset: http://asset.localhost ipc: http://ipc.localhost; connect-src \u0027self\u0027 ipc: http://ipc.localhost http://127.0.0.1:* http://localhost:*; img-src \u0027self\u0027 asset: http://asset.localhost blob: data:; style-src \u0027self\u0027 \u0027unsafe-inline\u0027; style-src-elem \u0027self\u0027 \u0027unsafe-inline\u0027; style-src-attr \u0027self\u0027 \u0027unsafe-inline\u0027; font-src \u0027self\u0027 data:; script-src \u0027self\u0027"
+                             }
+            },
+    "bundle":  {
+                   "active":  true,
+                   "targets":  [
+                                   "nsis",
+                                   "msi"
+                               ],
+                   "icon":  [
+                                "icons/32x32.png",
+                                "icons/128x128.png",
+                                "icons/128x128@2x.png",
+                                "icons/icon.ico"
+                            ],
+                   "externalBin":  [
+                                       "binaries/veriframe-engine"
+                                   ],
+                   "resources":  [
+                                     "../../../models/configs",
+                                     "../../../models/model_cards",
+                                     "../../../storage/migrations",
+                                     "../../../docs"
+                                 ]
+               }
 }

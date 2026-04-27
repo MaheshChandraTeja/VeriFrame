@@ -24,8 +24,8 @@ use commands::{
     },
     model_commands::{list_models, load_model, unload_model},
     report_commands::{
-        export_audit_receipt, export_evidence_map, export_report_html, export_report_json,
-        list_reports,
+        delete_report, export_audit_receipt, export_evidence_map, export_report_html,
+        export_report_json, list_reports,
     },
     review_commands::{
         export_review_dataset, get_review_session, save_finding_review, save_region_correction,
@@ -76,6 +76,7 @@ pub fn run() {
             export_report_html,
             export_evidence_map,
             export_audit_receipt,
+            delete_report,
             get_review_session,
             save_region_correction,
             save_finding_review,

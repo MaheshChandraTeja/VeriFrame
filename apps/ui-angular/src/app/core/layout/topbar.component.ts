@@ -10,8 +10,22 @@ import {
 import { RouterLink } from "@angular/router";
 
 import { ThemeService } from "../theme/theme.service";
-import { AppBadgeComponent, type AppBadgeVariant } from "../../shared/ui/badge/app-badge.component";
-import { ModelService, type LoadedModelSummary } from "../../features/models/services/model.service";
+import { TauriService } from "../native/tauri.service";
+import { AppBadgeComponent } from "../../shared/ui/badge/app-badge.component";
+
+interface EngineStatus {
+  readonly running: boolean;
+  readonly port: number;
+  readonly pid: number | null;
+  readonly startedAt: string | null;
+  readonly tokenIssued: boolean;
+  readonly message: string;
+  readonly logsPath: string;
+}
+
+interface ModelRegistryResponse {
+  readonly loadedModels?: readonly unknown[];
+}
 
 @Component({
   selector: "vf-topbar",
@@ -26,12 +40,29 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
 
       <div class="vf-topbar__meta" aria-label="Application status">
         <vf-badge [variant]="engineBadgeVariant()">
-          {{ engineLabel() }}
+          {{ engineBadgeLabel() }}
         </vf-badge>
 
-        <span class="vf-topbar__model" [title]="modelTooltip()">
-          Model:
-          <strong>{{ modelLabel() }}</strong>
+        @if (!engineRunning()) {
+          <button
+            class="vf-topbar__engine-action"
+            type="button"
+            [disabled]="engineBusy()"
+            [attr.aria-busy]="engineBusy()"
+            (click)="startEngine()"
+          >
+            {{ engineBusy() ? 'Starting engine…' : 'Start engine' }}
+          </button>
+        }
+
+        @if (engineError()) {
+          <span class="vf-topbar__engine-error" [title]="engineError()">
+            Engine start failed
+          </span>
+        }
+
+        <span class="vf-topbar__model">
+          Model: <strong>{{ modelStatusLabel() }}</strong>
         </span>
 
         <button
@@ -60,9 +91,7 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
         min-height: 82px;
         padding: 18px 28px;
         border-bottom: 1px solid var(--vf-border);
-        background:
-          radial-gradient(circle at 80% 0%, rgba(56, 189, 248, 0.08), transparent 26rem),
-          color-mix(in srgb, var(--vf-bg) 82%, transparent);
+        background: color-mix(in srgb, var(--vf-bg) 78%, transparent);
         backdrop-filter: blur(22px);
       }
 
@@ -74,45 +103,48 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
         display: block;
         color: var(--vf-text-muted);
         font-size: 12px;
-        font-weight: 900;
-        letter-spacing: 0.16em;
+        font-weight: 800;
+        letter-spacing: 0.14em;
         text-transform: uppercase;
       }
 
       .vf-topbar h1 {
         margin: 4px 0 0;
-        color: var(--vf-text);
         font-size: clamp(22px, 3vw, 32px);
-        line-height: 1;
-        letter-spacing: -0.06em;
+        letter-spacing: -0.05em;
       }
 
       .vf-topbar__meta {
         display: flex;
         align-items: center;
+        justify-content: flex-end;
         gap: 12px;
         min-width: max-content;
       }
 
-      .vf-topbar__model {
-        max-width: min(360px, 34vw);
-        overflow: hidden;
+      .vf-topbar__model,
+      .vf-topbar__engine-error {
         border: 1px solid var(--vf-border);
         border-radius: 999px;
-        background: rgba(2, 6, 23, 0.22);
         padding: 9px 12px;
         color: var(--vf-text-muted);
         font-size: 13px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
       .vf-topbar__model strong {
         color: var(--vf-text);
       }
 
+      .vf-topbar__engine-error {
+        border-color: color-mix(in srgb, var(--vf-danger) 45%, var(--vf-border));
+        background: var(--vf-danger-soft);
+        color: var(--vf-danger);
+        font-weight: 800;
+      }
+
       .vf-topbar__theme,
-      .vf-topbar__action {
+      .vf-topbar__action,
+      .vf-topbar__engine-action {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -125,27 +157,46 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
         transition:
           background 160ms ease,
           transform 160ms ease,
-          border-color 160ms ease;
+          border-color 160ms ease,
+          opacity 160ms ease;
       }
 
       .vf-topbar__theme {
         width: 42px;
       }
 
-      .vf-topbar__action {
+      .vf-topbar__action,
+      .vf-topbar__engine-action {
         padding: 0 14px;
+        font-weight: 850;
+      }
+
+      .vf-topbar__action {
         background: var(--vf-primary);
         color: #03121d;
-        font-weight: 900;
+      }
+
+      .vf-topbar__engine-action {
+        border-color: color-mix(in srgb, var(--vf-success) 48%, var(--vf-border));
+        background: linear-gradient(135deg, var(--vf-success), #7dd3fc);
+        color: #03121d;
+        box-shadow: 0 14px 40px rgba(123, 241, 168, 0.14);
       }
 
       .vf-topbar__theme:hover,
-      .vf-topbar__action:hover {
+      .vf-topbar__action:hover,
+      .vf-topbar__engine-action:hover {
         transform: translateY(-1px);
         border-color: var(--vf-border-strong);
       }
 
-      @media (max-width: 880px) {
+      .vf-topbar__engine-action:disabled {
+        cursor: wait;
+        opacity: 0.68;
+        transform: none;
+      }
+
+      @media (max-width: 980px) {
         .vf-topbar {
           position: static;
           align-items: flex-start;
@@ -156,10 +207,7 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
         .vf-topbar__meta {
           flex-wrap: wrap;
           min-width: 0;
-        }
-
-        .vf-topbar__model {
-          max-width: 100%;
+          justify-content: flex-start;
         }
       }
     `
@@ -168,12 +216,52 @@ import { ModelService, type LoadedModelSummary } from "../../features/models/ser
 })
 export class TopbarComponent implements OnInit, OnDestroy {
   private readonly themeService = inject(ThemeService);
-  private readonly modelService = inject(ModelService);
-
+  private readonly tauri = inject(TauriService);
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
 
-  readonly engineOnline = signal<boolean | null>(null);
-  readonly loadedModels = signal<readonly LoadedModelSummary[]>([]);
+  readonly engineStatus = signal<EngineStatus | null>(null);
+  readonly engineBusy = signal(false);
+  readonly engineError = signal<string | null>(null);
+  readonly loadedModelCount = signal(0);
+
+  readonly engineRunning = computed(() => this.engineStatus()?.running === true);
+
+  readonly engineBadgeLabel = computed(() => {
+    const status = this.engineStatus();
+
+    if (this.engineBusy()) {
+      return "Engine starting";
+    }
+
+    if (!status) {
+      return "Engine checking";
+    }
+
+    return status.running ? "Engine online" : "Engine offline";
+  });
+
+  readonly engineBadgeVariant = computed<"success" | "warning" | "neutral">(() => {
+    if (this.engineBusy()) {
+      return "warning";
+    }
+
+    const status = this.engineStatus();
+    if (!status) {
+      return "neutral";
+    }
+
+    return status.running ? "success" : "warning";
+  });
+
+  readonly modelStatusLabel = computed(() => {
+    const count = this.loadedModelCount();
+
+    if (count === 0) {
+      return "No model loaded";
+    }
+
+    return count === 1 ? "1 model loaded" : `${count} models loaded`;
+  });
 
   readonly themeIcon = computed(() => {
     const preference = this.themeService.preference();
@@ -189,57 +277,11 @@ export class TopbarComponent implements OnInit, OnDestroy {
     () => `Current theme: ${this.themeService.preference()}. Toggle theme.`
   );
 
-  readonly engineLabel = computed(() => {
-    const state = this.engineOnline();
-
-    if (state === null) {
-      return "Engine checking";
-    }
-
-    return state ? "Engine online" : "Engine offline";
-  });
-
-  readonly engineBadgeVariant = computed<AppBadgeVariant>(() => {
-    const state = this.engineOnline();
-
-    if (state === null) {
-      return "neutral";
-    }
-
-    return state ? "success" : "danger";
-  });
-
-  readonly modelLabel = computed(() => {
-    const loaded = this.loadedModels();
-
-    if (loaded.length === 0) {
-      return "No model loaded";
-    }
-
-    if (loaded.length === 1) {
-      return loaded[0]?.name ?? "1 model loaded";
-    }
-
-    return `${loaded.length} models loaded`;
-  });
-
-  readonly modelTooltip = computed(() => {
-    const loaded = this.loadedModels();
-
-    if (loaded.length === 0) {
-      return "No TorchVision model is currently loaded in the engine.";
-    }
-
-    return loaded
-      .map((model) => `${model.name} · ${model.task} · ${model.device}`)
-      .join("\n");
-  });
-
-  ngOnInit(): void {
-    void this.refreshStatus();
+  async ngOnInit(): Promise<void> {
+    await this.refreshEngineState();
 
     this.refreshTimer = setInterval(() => {
-      void this.refreshStatus();
+      void this.refreshEngineState();
     }, 5000);
   }
 
@@ -254,14 +296,66 @@ export class TopbarComponent implements OnInit, OnDestroy {
     this.themeService.toggleTheme();
   }
 
-  private async refreshStatus(): Promise<void> {
-    try {
-      const response = await this.modelService.listModels();
-      this.loadedModels.set(response.loadedModels);
-      this.engineOnline.set(true);
-    } catch {
-      this.loadedModels.set([]);
-      this.engineOnline.set(false);
+  async startEngine(): Promise<void> {
+    if (this.engineBusy()) {
+      return;
     }
+
+    this.engineBusy.set(true);
+    this.engineError.set(null);
+
+    try {
+      const status = await this.tauri.invoke<EngineStatus>("start_engine");
+      this.engineStatus.set(status);
+
+      // Give the FastAPI sidecar a moment to finish binding before model registry refresh.
+      window.setTimeout(() => {
+        void this.refreshEngineState();
+      }, 900);
+    } catch (error) {
+      this.engineError.set(this.errorMessage(error));
+      await this.refreshEngineState();
+    } finally {
+      this.engineBusy.set(false);
+    }
+  }
+
+  private async refreshEngineState(): Promise<void> {
+    try {
+      const status = await this.tauri.invoke<EngineStatus>("engine_status");
+      this.engineStatus.set(status);
+
+      if (status.running) {
+        await this.refreshLoadedModels();
+      } else {
+        this.loadedModelCount.set(0);
+      }
+    } catch (error) {
+      this.engineStatus.set(null);
+      this.loadedModelCount.set(0);
+      this.engineError.set(this.errorMessage(error));
+    }
+  }
+
+  private async refreshLoadedModels(): Promise<void> {
+    try {
+      const registry = await this.tauri.invoke<ModelRegistryResponse>("list_models");
+      this.loadedModelCount.set(registry.loadedModels?.length ?? 0);
+    } catch {
+      // Engine may be alive while FastAPI is still warming. Keep the top bar calm.
+      this.loadedModelCount.set(0);
+    }
+  }
+
+  private errorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    if (typeof error === "string") {
+      return error;
+    }
+
+    return "The local engine could not be started.";
   }
 }

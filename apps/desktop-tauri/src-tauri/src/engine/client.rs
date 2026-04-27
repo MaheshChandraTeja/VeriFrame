@@ -23,10 +23,9 @@ impl EngineClient {
     where
         T: DeserializeOwned,
     {
-        let url = self.url(path);
         let response = self
             .client
-            .get(url)
+            .get(self.url(path))
             .header("x-veriframe-token", &self.token)
             .send()
             .await
@@ -39,10 +38,9 @@ impl EngineClient {
     where
         T: DeserializeOwned,
     {
-        let url = self.url(path);
         let response = self
             .client
-            .post(url)
+            .post(self.url(path))
             .header("x-veriframe-token", &self.token)
             .json(body)
             .send()
@@ -56,12 +54,26 @@ impl EngineClient {
     where
         T: DeserializeOwned,
     {
-        let url = self.url(path);
         let response = self
             .client
-            .put(url)
+            .put(self.url(path))
             .header("x-veriframe-token", &self.token)
             .json(body)
+            .send()
+            .await
+            .map_err(|error| AppError::EngineUnavailable(error.to_string()))?;
+
+        Self::parse_response(response).await
+    }
+
+    pub async fn delete_json<T>(&self, path: &str) -> Result<T, AppError>
+    where
+        T: DeserializeOwned,
+    {
+        let response = self
+            .client
+            .delete(self.url(path))
+            .header("x-veriframe-token", &self.token)
             .send()
             .await
             .map_err(|error| AppError::EngineUnavailable(error.to_string()))?;

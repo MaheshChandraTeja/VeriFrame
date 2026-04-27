@@ -34,7 +34,7 @@ impl AnalysisRunRecord {
             workflow: workflow.unwrap_or_else(|| "visual_audit".to_string()),
             status: "queued".to_string(),
             percent: 0,
-            message: "Analysis run created locally. Engine submission arrives in Module 4.".into(),
+            message: "Analysis run created locally and is ready for engine submission.".into(),
             created_at: now.clone(),
             updated_at: now,
         }

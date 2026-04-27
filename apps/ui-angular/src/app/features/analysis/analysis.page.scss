@@ -46,6 +46,33 @@
   line-height: 1.6;
 }
 
+.vf-analysis-page__hero-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.vf-analysis-page__review-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 999px;
+  background: var(--vf-primary-soft);
+  color: var(--vf-primary);
+  font-weight: 950;
+  padding: 10px 15px;
+  text-decoration: none;
+}
+
+.vf-analysis-page__review-link:hover {
+  border-color: rgba(56, 189, 248, 0.46);
+  transform: translateY(-1px);
+}
+
 .vf-analysis-page__message {
   border: 1px solid var(--vf-border);
   border-radius: var(--vf-radius-md);
@@ -98,5 +125,9 @@
   .vf-analysis-page__hero {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .vf-analysis-page__hero-actions {
+    justify-content: flex-start;
   }
 }

@@ -100,3 +100,43 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.vf-review-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.vf-review-page__back-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 999px;
+  background: var(--vf-primary-soft);
+  color: var(--vf-primary);
+  font-weight: 950;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.vf-review-page__back-link:hover {
+  border-color: rgba(56, 189, 248, 0.38);
+  transform: translateY(-1px);
+}
+
+.vf-review-page__message.is-error {
+  border-color: color-mix(in srgb, var(--vf-danger) 35%, var(--vf-border));
+  background: color-mix(in srgb, var(--vf-danger) 12%, var(--vf-surface));
+  color: var(--vf-text);
+}
+
+.vf-review-page__message.is-success {
+  border-color: color-mix(in srgb, var(--vf-success) 35%, var(--vf-border));
+  background: color-mix(in srgb, var(--vf-success) 12%, var(--vf-surface));
+  color: var(--vf-text);
+}

@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 use std::sync::Arc;
 
@@ -15,6 +15,11 @@ use crate::security::token::SessionToken;
 
 const DEFAULT_ENGINE_PORT: u16 = 32187;
 const LOG_LIMIT: usize = 500;
+const PACKAGED_SIDECAR_NAMES: &[&str] = &[
+    "veriframe-engine-x86_64-pc-windows-msvc.exe",
+    "veriframe-engine.exe",
+    "veriframe-engine",
+];
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -103,6 +108,7 @@ impl SidecarManager {
         tracing::info!(
             program = %spec.program,
             args = ?spec.args,
+            working_dir = ?spec.working_dir,
             python_path = ?spec.python_path,
             "Starting VeriFrame Python sidecar"
         );
@@ -122,7 +128,7 @@ impl SidecarManager {
 
         let mut child = command.spawn().map_err(|error| {
             AppError::EngineUnavailable(format!(
-                "Unable to start Python sidecar using '{}': {error}",
+                "Unable to start the local Python engine using '{}'. {error}",
                 spec.program
             ))
         })?;
@@ -189,13 +195,12 @@ impl SidecarManager {
     pub async fn client(&self) -> Option<crate::engine::client::EngineClient> {
         let inner = self.inner.lock().await;
 
-        inner
-            .token
-            .as_ref()
-            .map(|token| crate::engine::client::EngineClient::new(
+        inner.token.as_ref().map(|token| {
+            crate::engine::client::EngineClient::new(
                 inner.port,
                 token.expose_for_local_sidecar().to_string(),
-            ))
+            )
+        })
     }
 }
 
@@ -223,6 +228,15 @@ pub fn build_sidecar_command_spec(port: u16, token: &str) -> SidecarCommandSpec 
 }
 
 pub fn build_default_sidecar_command_spec(port: u16, token: &str) -> SidecarCommandSpec {
+    if let Some((program, working_dir)) = discover_packaged_sidecar() {
+        return SidecarCommandSpec {
+            program: program.to_string_lossy().to_string(),
+            args: packaged_engine_args(port, token),
+            working_dir,
+            python_path: None,
+        };
+    }
+
     SidecarCommandSpec {
         program: "conda".to_string(),
         args: vec![
@@ -245,6 +259,12 @@ pub fn build_default_sidecar_command_spec(port: u16, token: &str) -> SidecarComm
     }
 }
 
+fn packaged_engine_args(port: u16, token: &str) -> Vec<String> {
+    let mut args = vec!["serve".to_string()];
+    args.extend(default_engine_args(port, token));
+    args
+}
+
 fn default_engine_args(port: u16, token: &str) -> Vec<String> {
     vec![
         "--host".to_string(),
@@ -254,6 +274,59 @@ fn default_engine_args(port: u16, token: &str) -> Vec<String> {
         "--token".to_string(),
         token.to_string(),
     ]
+}
+
+fn discover_packaged_sidecar() -> Option<(PathBuf, Option<PathBuf>)> {
+    if let Ok(explicit) = std::env::var("VERIFRAME_ENGINE_EXE") {
+        let path = PathBuf::from(explicit);
+        if is_valid_sidecar_candidate(&path) {
+            let working_dir = path.parent().map(Path::to_path_buf);
+            return Some((path, working_dir));
+        }
+    }
+
+    let mut candidates: Vec<(PathBuf, Option<PathBuf>)> = Vec::new();
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            push_sidecar_candidates(&mut candidates, exe_dir, exe_dir);
+            push_sidecar_candidates(&mut candidates, &exe_dir.join("binaries"), exe_dir);
+            push_sidecar_candidates(&mut candidates, &exe_dir.join("resources").join("binaries"), exe_dir);
+            push_sidecar_candidates(&mut candidates, &exe_dir.join(".."), exe_dir);
+            push_sidecar_candidates(
+                &mut candidates,
+                &exe_dir.join("..").join("resources").join("binaries"),
+                exe_dir,
+            );
+        }
+    }
+
+    if let Ok(current_dir) = std::env::current_dir() {
+        push_sidecar_candidates(&mut candidates, &current_dir, &current_dir);
+        push_sidecar_candidates(&mut candidates, &current_dir.join("binaries"), &current_dir);
+        push_sidecar_candidates(
+            &mut candidates,
+            &current_dir.join("resources").join("binaries"),
+            &current_dir,
+        );
+    }
+
+    candidates.into_iter().find(|(candidate, _)| {
+        is_valid_sidecar_candidate(candidate)
+    })
+}
+
+fn push_sidecar_candidates(candidates: &mut Vec<(PathBuf, Option<PathBuf>)>, dir: &Path, working_dir: &Path) {
+    for name in PACKAGED_SIDECAR_NAMES {
+        candidates.push((dir.join(name), Some(working_dir.to_path_buf())));
+    }
+}
+
+fn is_valid_sidecar_candidate(path: &Path) -> bool {
+    match path.metadata() {
+        Ok(metadata) => metadata.is_file() && metadata.len() > 0,
+        Err(_) => false,
+    }
 }
 
 fn discover_dev_python_path() -> Option<PathBuf> {
@@ -300,9 +373,7 @@ where
                         inner.logs.pop_front();
                     }
 
-                    inner
-                        .logs
-                        .push_back(format!("[{stream_name}] {line}"));
+                    inner.logs.push_back(format!("[{stream_name}] {line}"));
                 }
                 Ok(None) => break,
                 Err(error) => {

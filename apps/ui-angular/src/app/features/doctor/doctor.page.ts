@@ -29,11 +29,10 @@ import {
     <section class="vf-doctor-page">
       <header class="vf-doctor-page__hero">
         <div class="vf-doctor-page__hero-copy">
-          <span class="vf-doctor-page__eyebrow">System diagnostics</span>
-          <h1>Check system health and fix issues faster.</h1>
+          <span class="vf-doctor-page__eyebrow">System doctor</span>
+          <h1>Diagnose the local audit stack.</h1>
           <p>
-            Verify the desktop shell, local engine, storage folders, database path,
-            model directory, runtime details, and recent logs from one place.
+            Check engine reachability, database readiness, model paths, storage permissions, runtime information, and recent local logs.
           </p>
 
           <div class="vf-doctor-page__hero-actions">
@@ -58,10 +57,10 @@ import {
           </div>
 
           <section class="vf-doctor-page__hero-note">
-            <strong>When to use this</strong>
+            <strong>What this page is for</strong>
             <p>
-              Open this page when imports fail, reports look empty, models do not load,
-              logs are missing, or the app feels like it has started negotiating with the void.
+              Use it when the app feels “weird”: empty screens, failed imports, missing models,
+              no logs, or anything that smells like a setup problem rather than a product feature.
             </p>
           </section>
         </aside>
@@ -69,7 +68,7 @@ import {
 
       <section class="vf-doctor-page__statusbar">
         <div>
-          <strong>Health summary</strong>
+          <strong>Doctor status</strong>
           <span>{{ statusMessage() }}</span>
         </div>
 
@@ -82,13 +81,13 @@ import {
         <section class="vf-doctor-page__main">
           <vf-card
             title="Diagnostic checks"
-            subtitle="Each check explains what was tested, what passed, and what needs attention."
+            subtitle="Each card explains what was tested and what the result actually means."
           >
             @if (checks().length === 0) {
               <div class="vf-doctor-page__empty-panel">
-                <strong>No results yet.</strong>
+                <strong>No diagnostic results collected yet.</strong>
                 <p>
-                  Run diagnostics to inspect the desktop shell, engine, storage, model directory, and logs.
+                  Run diagnostics after starting the local engine to collect engine, database, model path, and storage checks.
                 </p>
               </div>
             } @else {
@@ -98,6 +97,39 @@ import {
                 }
               </div>
             }
+          </vf-card>
+
+          <vf-card
+            title="What to do next"
+            subtitle="A quick runbook so the page gives you answers, not just vibes."
+          >
+            <div class="vf-doctor-page__runbook">
+              <article>
+                <strong>If the engine fails</strong>
+                <p>
+                  Use the Start engine button in the top bar. If it still stays offline, check the sidecar path and log folder below, then rerun diagnostics.
+                </p>
+              </article>
+              <article>
+                <strong>If storage fails</strong>
+                <p>
+                  Check whether the configured app data, report, or temp directories exist and are writable.
+                </p>
+              </article>
+              <article>
+                <strong>If model paths fail</strong>
+                <p>
+                  Verify config files exist, checkpoints are where the registry expects them, and the model page
+                  can still list profiles.
+                </p>
+              </article>
+              <article>
+                <strong>If logs are empty</strong>
+                <p>
+                  Start the engine from the top bar, run one action, then refresh logs. An empty viewer usually means nothing has written yet.
+                </p>
+              </article>
+            </div>
           </vf-card>
         </section>
 
@@ -109,39 +141,6 @@ import {
             [path]="logPath()"
             [message]="logStateMessage()"
           />
-
-          <vf-card
-            title="Fix guide"
-            subtitle="Start here when a check fails. Boring, yes. Useful, unfortunately also yes."
-          >
-            <div class="vf-doctor-page__runbook">
-              <article>
-                <strong>Engine is stopped</strong>
-                <p>
-                  Use the engine control in the top bar. For development QA, you can also run
-                  <code>pnpm dev:engine</code> in a separate terminal.
-                </p>
-              </article>
-              <article>
-                <strong>Storage is blocked</strong>
-                <p>
-                  Confirm the app data, reports, logs, models, and temp folders exist and are writable by your Windows user.
-                </p>
-              </article>
-              <article>
-                <strong>Models are missing</strong>
-                <p>
-                  Check the model directory and registry configuration. Fine-tuned checkpoints must be exactly where the config expects them.
-                </p>
-              </article>
-              <article>
-                <strong>Logs are empty</strong>
-                <p>
-                  Trigger an engine action, then refresh. Empty logs usually mean nothing has written yet, not that the universe has ended.
-                </p>
-              </article>
-            </div>
-          </vf-card>
         </aside>
       </div>
     </section>
@@ -157,7 +156,7 @@ export class DoctorPageComponent {
   readonly logLines = signal<readonly string[]>([]);
   readonly logPath = signal<string | null>(null);
   readonly isRunning = signal(false);
-  readonly statusMessage = signal("Run diagnostics to inspect the local app environment.");
+  readonly statusMessage = signal("Run diagnostics to inspect the local desktop environment.");
   readonly lastRunOk = signal<boolean | null>(null);
 
   readonly summaryCards = computed(() => {
@@ -174,19 +173,19 @@ export class DoctorPageComponent {
         hint: "results collected"
       },
       {
-        label: "Healthy",
+        label: "Passing",
         value: String(passCount),
-        hint: "passing checks"
+        hint: "healthy checks"
       },
       {
-        label: "Attention",
+        label: "Needs attention",
         value: String(warnCount + failCount),
-        hint: "warnings and failures"
+        hint: "warn + fail"
       },
       {
         label: "Logs",
         value: String(this.logLines().length),
-        hint: "lines loaded"
+        hint: "tail lines loaded"
       }
     ];
   });
@@ -219,14 +218,14 @@ export class DoctorPageComponent {
 
   readonly logStateMessage = computed(() => {
     if (this.logLines().length > 0) {
-      return "Showing recent desktop or engine log lines.";
+      return "Showing the most recent local log lines.";
     }
 
     if (this.logPath()) {
-      return "No log lines were found at the current log path yet.";
+      return "The log file exists, but the current tail is empty.";
     }
 
-    return "No log file has been discovered yet. Run an engine action, then refresh.";
+    return "No log file has been discovered yet. Run the engine or trigger an action, then refresh.";
   });
 
   async ngOnInit(): Promise<void> {
@@ -235,7 +234,7 @@ export class DoctorPageComponent {
 
   async run(): Promise<void> {
     this.isRunning.set(true);
-    this.statusMessage.set("Running diagnostics…");
+    this.statusMessage.set("Running local diagnostics…");
 
     const [checksResult, systemInfoResult, logTailResult] = await Promise.allSettled([
       this.doctorService.collectChecks(),
@@ -278,10 +277,10 @@ export class DoctorPageComponent {
       ].filter(Boolean);
 
       this.statusMessage.set(
-        `Diagnostics returned partial results. Could not collect: ${failures.join(", ")}.`
+        `Diagnostics completed with partial results. ${failures.join(", ")} could not be collected.`
       );
     } else {
-      this.statusMessage.set("Diagnostics completed. Results are current.");
+      this.statusMessage.set("Diagnostics completed. Everything on this page is current.");
     }
 
     this.isRunning.set(false);
@@ -295,7 +294,6 @@ export class DoctorPageComponent {
       this.logLines.set(result.lines ?? []);
       this.logPath.set(result.path ?? null);
       this.statusMessage.set("Log tail refreshed.");
-      this.lastRunOk.set(true);
     } catch (error) {
       this.logLines.set([]);
       this.logPath.set(null);
@@ -318,9 +316,9 @@ export class DoctorPageComponent {
           title: "No checks returned",
           status: "warn",
           message:
-            "The diagnostics command responded, but returned an empty checklist.",
+            "The diagnostics endpoint responded, but it returned an empty checklist. That usually means the command is wired correctly, but the check aggregation returned no items.",
           details: {
-            nextStep: "Verify that the desktop diagnostics command is registered and returning check objects."
+            nextStep: "Inspect the desktop diagnostics command and verify each check is registered."
           }
         }
       ];
@@ -332,44 +330,16 @@ export class DoctorPageComponent {
         title: "Diagnostics command failed",
         status: "fail",
         message:
-          "The app could not collect the diagnostic checklist. System info and logs may still show partial details.",
+          "The app could not collect the main diagnostic checklist. The rest of the page may still show partial information.",
         details: {
           error: this.errorMessage(result.reason),
-          nextStep: "Check the desktop terminal output, then rerun diagnostics."
+          nextStep: "Start the engine from the top bar if it is offline. If diagnostics still fail, check the local desktop logs and rerun diagnostics."
         }
       }
     ];
   }
 
   private errorMessage(error: unknown): string {
-    if (error instanceof Error) {
-      return error.message;
-    }
-
-    if (typeof error === "string") {
-      return error;
-    }
-
-    if (error && typeof error === "object") {
-      const record = error as Record<string, unknown>;
-      const message = record["message"];
-      const code = record["code"];
-
-      if (typeof message === "string" && typeof code === "string") {
-        return `${code}: ${message}`;
-      }
-
-      if (typeof message === "string") {
-        return message;
-      }
-
-      try {
-        return JSON.stringify(error);
-      } catch {
-        return "Unknown object error";
-      }
-    }
-
-    return "Unknown error";
+    return error instanceof Error ? error.message : "Unknown error";
   }
 }

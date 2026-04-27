@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, RouterLink } from "@angular/router";
 
 import { AppButtonComponent } from "../../shared/ui/button/app-button.component";
 import { AppCardComponent } from "../../shared/ui/card/app-card.component";
@@ -19,7 +19,8 @@ import { AnalysisStore, SeverityFilter } from "./state/analysis.store";
     EvidenceViewerComponent,
     FindingListComponent,
     QualityPanelComponent,
-    RegionDetailPanelComponent
+    RegionDetailPanelComponent,
+    RouterLink
   ],
   template: `
     <section class="vf-analysis-page">
@@ -29,12 +30,21 @@ import { AnalysisStore, SeverityFilter } from "./state/analysis.store";
           <h2>Visual audit workspace.</h2>
           <p>
             Review regions, evidence overlays, deterministic findings, and image quality signals.
+            Send the run to human review when the boxes need correction instead of wishful thinking.
           </p>
         </div>
 
-        <vf-button variant="secondary" (clicked)="reload()">
-          Reload result
-        </vf-button>
+        <div class="vf-analysis-page__hero-actions">
+          <vf-button variant="secondary" (clicked)="reload()">
+            Reload result
+          </vf-button>
+
+          @if (runId(); as id) {
+            <a class="vf-analysis-page__review-link" [routerLink]="['/review', id]">
+              Open review workspace
+            </a>
+          }
+        </div>
       </div>
 
       @if (store.error()) {

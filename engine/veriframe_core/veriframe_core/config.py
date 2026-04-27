@@ -5,7 +5,7 @@ import platform
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 DevicePreference = Literal["auto", "cpu", "cuda", "mps"]
 LogLevel = Literal["TRACE", "DEBUG", "INFO", "WARN", "ERROR"]
@@ -30,6 +30,10 @@ def default_app_data_dir() -> Path:
 
 
 class EngineSettings(BaseModel):
+    model_config = ConfigDict(
+        protected_namespaces=(),
+    )
+
     app_data_dir: Path = Field(default_factory=default_app_data_dir)
     model_dir: Path | None = None
     temp_dir: Path | None = None

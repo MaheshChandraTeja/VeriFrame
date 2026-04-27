@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from veriframe_core.api.auth import require_local_token
 from veriframe_core.contracts.analysis import (
@@ -25,6 +26,8 @@ from veriframe_core.pipeline.analysis_pipeline import AnalysisPipeline
 from veriframe_core.preprocessing.quality import compute_quality_signals
 from veriframe_core.runtime.progress import ProgressSnapshot
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(
     prefix="/analysis",
     tags=["analysis"],
@@ -41,7 +44,34 @@ async def submit_analysis(request: Request, analysis_request: AnalysisRequest) -
         progress_registry=request.app.state.progress_registry,
         cancellation_registry=request.app.state.cancellation_registry,
     )
-    result = pipeline.run(analysis_request)
+
+    try:
+        result = pipeline.run(analysis_request)
+    except AnalysisCancelledError:
+        raise
+    except EngineError as exc:
+        logger.exception("Analysis request failed with engine error.")
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "code": exc.__class__.__name__,
+                "message": getattr(exc, "message", str(exc)),
+                "details": getattr(exc, "details", None),
+                "requestId": analysis_request.requestId,
+            },
+        ) from exc
+    except Exception as exc:
+        logger.exception("Analysis request crashed.")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "code": "ANALYSIS_FAILED",
+                "message": "Analysis pipeline failed.",
+                "details": f"{type(exc).__name__}: {exc}",
+                "requestId": analysis_request.requestId,
+            },
+        ) from exc
+
     request.app.state.analysis_results[result.runId] = result
     return result
 
