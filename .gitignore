@@ -249,7 +249,7 @@ storage/temp/
 storage/reports/
 storage/exports/
 storage/logs/
-reports/
+# reports/
 generated-reports/
 report-artifacts/
 exports/
