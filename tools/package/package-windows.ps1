@@ -70,14 +70,7 @@ function Resolve-PackagingPython {
   if ($ExplicitPython -and (Test-Path $ExplicitPython)) {
     return (Resolve-Path $ExplicitPython).Path
   }
-
-  if ($env:CONDA_PREFIX) {
-    $condaPrefixPython = Join-Path $env:CONDA_PREFIX "python.exe"
-    if (Test-Path $condaPrefixPython) {
-      return (Resolve-Path $condaPrefixPython).Path
-    }
-  }
-
+  
   $condaCommand = Get-Command conda -ErrorAction SilentlyContinue
   if ($condaCommand -and $EnvName) {
     $resolved = & conda run -n $EnvName python -c "import sys; print(sys.executable)" 2>$null
@@ -86,6 +79,13 @@ function Resolve-PackagingPython {
       if (Test-Path $candidate) {
         return (Resolve-Path $candidate).Path
       }
+    }
+  }
+  
+  if ($env:CONDA_PREFIX) {
+    $condaPrefixPython = Join-Path $env:CONDA_PREFIX "python.exe"
+    if (Test-Path $condaPrefixPython) {
+      return (Resolve-Path $condaPrefixPython).Path
     }
   }
 
@@ -359,38 +359,202 @@ if __name__ == "__main__":
   $ModelConfigsPath = Join-Path $RepoRoot "models\configs"
   $ModelCardsPath = Join-Path $RepoRoot "models\model_cards"
 
-  $pyiArgs = @(
+  $RuntimeHookPath = Join-Path $RepoRoot "tools\package\pyinstaller_runtime_hook.py"
+
+  if (-not (Test-Path $RuntimeHookPath)) {
+    @'
+import os
+import sys
+from pathlib import Path
+
+
+def _add_dll_dir(path: Path) -> None:
+    try:
+        if path.exists() and path.is_dir():
+            os.environ["PATH"] = str(path) + os.pathsep + os.environ.get("PATH", "")
+            if hasattr(os, "add_dll_directory"):
+                os.add_dll_directory(str(path))
+    except Exception:
+        pass
+
+
+if hasattr(sys, "_MEIPASS"):
+    root = Path(sys._MEIPASS)
+    _add_dll_dir(root)
+
+    for child in root.rglob("*"):
+        if child.is_dir():
+            try:
+                if any(p.suffix.lower() == ".dll" for p in child.iterdir() if p.is_file()):
+                    _add_dll_dir(child)
+            except Exception:
+                pass
+'@ | Set-Content -Path $RuntimeHookPath -Encoding UTF8
+    Write-Ok "Created PyInstaller runtime hook: $RuntimeHookPath"
+  }
+
+  $PythonPrefix = (& $PythonExe -c "import sys; print(sys.prefix)" | Select-Object -Last 1).Trim()
+
+  $CandidateDllDirs = New-Object System.Collections.Generic.List[string]
+  $CandidateDllDirs.Add((Join-Path $PythonPrefix "Library\bin"))
+  $CandidateDllDirs.Add((Join-Path $PythonPrefix "Library\mingw-w64\bin"))
+
+  $EnvParent = Split-Path $PythonPrefix -Parent
+  $MaybeCondaRoot = Split-Path $EnvParent -Parent
+
+  if (Test-Path $MaybeCondaRoot) {
+    $CandidateDllDirs.Add((Join-Path $MaybeCondaRoot "Library\bin"))
+    $CandidateDllDirs.Add((Join-Path $MaybeCondaRoot "Library\mingw-w64\bin"))
+  }
+
+  $ExistingDllDirs = @()
+  foreach ($dllDir in $CandidateDllDirs | Select-Object -Unique) {
+    if (Test-Path $dllDir) {
+      $ExistingDllDirs += $dllDir
+      Write-Ok "Native DLL directory added to spec: $dllDir"
+    } else {
+      Write-Warn "Native DLL directory not found: $dllDir"
+    }
+  }
+
+  $ReportsTemplatesPath = Join-Path $RepoRoot "engine\veriframe_core\veriframe_core\reports\templates"
+
+  $SpecPath = Join-Path $EngineSpec "veriframe-engine.spec"
+
+  $SpecContent = @"
+# -*- mode: python ; coding: utf-8 -*-
+
+import os
+from pathlib import Path
+from PyInstaller.utils.hooks import collect_dynamic_libs
+
+repo_root = r'$RepoRoot'
+engine_package_path = r'$EnginePackagePath'
+launcher_path = r'$LauncherPath'
+runtime_hook_path = r'$RuntimeHookPath'
+
+migrations_path = r'$MigrationsPath'
+model_configs_path = r'$ModelConfigsPath'
+model_cards_path = r'$ModelCardsPath'
+reports_templates_path = r'$ReportsTemplatesPath'
+
+native_dll_dirs = [
+$(
+  ($ExistingDllDirs | ForEach-Object { "    r'$_'," }) -join "`n"
+)
+]
+
+datas = []
+binaries = []
+hiddenimports = [
+    'uvicorn.loops.auto',
+    'uvicorn.protocols.http.auto',
+    'uvicorn.protocols.websockets.auto',
+    'uvicorn.lifespan.on',
+]
+
+
+def add_tree(src, dest):
+    src_path = Path(src)
+    if not src_path.exists():
+        return
+
+    for path in src_path.rglob('*'):
+        if path.is_file():
+            rel_parent = path.parent.relative_to(src_path)
+            target_dir = Path(dest) / rel_parent
+            datas.append((str(path), str(target_dir)))
+
+
+def add_native_dlls():
+    seen = set()
+
+    for dll_dir in native_dll_dirs:
+        dll_root = Path(dll_dir)
+        if not dll_root.exists():
+            continue
+
+        for dll in dll_root.glob('*.dll'):
+            key = dll.name.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            binaries.append((str(dll), '.'))
+
+    for package in ('numpy', 'cv2', 'torch', 'torchvision'):
+        try:
+            for item in collect_dynamic_libs(package):
+                src, dest = item[0], item[1]
+                key = Path(src).name.lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                binaries.append((src, dest))
+        except Exception:
+            pass
+
+
+add_native_dlls()
+
+add_tree(migrations_path, 'storage/migrations')
+add_tree(model_configs_path, 'models/configs')
+add_tree(model_cards_path, 'models/model_cards')
+add_tree(reports_templates_path, 'veriframe_core/reports/templates')
+
+a = Analysis(
+    [launcher_path],
+    pathex=[repo_root, engine_package_path],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[runtime_hook_path],
+    excludes=[
+        'tensorboard',
+        'pytest',
+        'numpy.tests',
+        'torch.utils.tensorboard',
+    ],
+    noarchive=False,
+    optimize=0,
+)
+
+pyz = PYZ(a.pure, a.zipped_data)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name='veriframe-engine',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+"@
+
+  $SpecContent | Set-Content -Path $SpecPath -Encoding UTF8
+  Write-Ok "Generated PyInstaller spec: $SpecPath"
+
+  Invoke-Checked $PythonExe @(
     "-m", "PyInstaller",
     "--clean",
     "--noconfirm",
-    "--onefile",
-    "--console",
-    "--name", "veriframe-engine",
     "--distpath", $EngineDist,
     "--workpath", $EngineBuild,
-    "--specpath", $EngineSpec,
-    "--paths", $EnginePackagePath,
-    "--collect-submodules", "veriframe_core",
-    "--collect-data", "veriframe_core",
-    "--hidden-import", "uvicorn.loops.auto",
-    "--hidden-import", "uvicorn.protocols.http.auto",
-    "--hidden-import", "uvicorn.protocols.websockets.auto",
-    "--hidden-import", "uvicorn.lifespan.on"
-  )
-
-  if (Test-Path $MigrationsPath) {
-    $pyiArgs += @("--add-data", "$MigrationsPath;storage/migrations")
-  }
-  if (Test-Path $ModelConfigsPath) {
-    $pyiArgs += @("--add-data", "$ModelConfigsPath;models/configs")
-  }
-  if (Test-Path $ModelCardsPath) {
-    $pyiArgs += @("--add-data", "$ModelCardsPath;models/model_cards")
-  }
-
-  $pyiArgs += $LauncherPath
-
-  Invoke-Checked $PythonExe $pyiArgs $RepoRoot
+    $SpecPath
+  ) $RepoRoot
 
   $EngineExe = Join-Path $EngineDist "veriframe-engine.exe"
   if (-not (Test-Path $EngineExe)) {

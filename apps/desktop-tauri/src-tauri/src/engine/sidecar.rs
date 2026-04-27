@@ -241,6 +241,7 @@ pub fn build_default_sidecar_command_spec(port: u16, token: &str) -> SidecarComm
         program: "conda".to_string(),
         args: vec![
             "run".to_string(),
+            "--no-capture-output".to_string(),
             "-n".to_string(),
             "veriframe".to_string(),
             "python".to_string(),
@@ -330,16 +331,42 @@ fn is_valid_sidecar_candidate(path: &Path) -> bool {
 }
 
 fn discover_dev_python_path() -> Option<PathBuf> {
-    let cwd = std::env::current_dir().ok()?;
+    let mut roots: Vec<PathBuf> = Vec::new();
 
-    let candidates = [
-        cwd.join("engine").join("veriframe_core"),
-        cwd.join("..").join("engine").join("veriframe_core"),
-        cwd.join("..").join("..").join("engine").join("veriframe_core"),
-    ];
+    if let Ok(explicit) = std::env::var("VERIFRAME_REPO_ROOT") {
+        roots.push(PathBuf::from(explicit));
+    }
 
-    candidates
+    if let Ok(cwd) = std::env::current_dir() {
+        roots.push(cwd.clone());
+
+        for ancestor in cwd.ancestors() {
+            roots.push(ancestor.to_path_buf());
+        }
+    }
+
+    if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        let manifest = PathBuf::from(manifest_dir);
+        roots.push(manifest.clone());
+
+        for ancestor in manifest.ancestors() {
+            roots.push(ancestor.to_path_buf());
+        }
+    }
+
+    if let Ok(current_exe) = std::env::current_exe() {
+        if let Some(exe_dir) = current_exe.parent() {
+            roots.push(exe_dir.to_path_buf());
+
+            for ancestor in exe_dir.ancestors() {
+                roots.push(ancestor.to_path_buf());
+            }
+        }
+    }
+
+    roots
         .into_iter()
+        .map(|root| root.join("engine").join("veriframe_core"))
         .find(|candidate| candidate.join("veriframe_core").join("__init__.py").exists())
 }
 

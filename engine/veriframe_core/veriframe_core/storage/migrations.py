@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import os
 import sqlite3
+import sys
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,18 +75,73 @@ def applied_versions(connection: sqlite3.Connection) -> set[str]:
 
 
 def default_migrations_dir() -> Path:
+    override = os.getenv("VERIFRAME_MIGRATIONS_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    candidates: list[Path] = []
+
+    # PyInstaller onefile mode extracts bundled data into sys._MEIPASS.
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        meipass_root = Path(meipass).resolve()
+        candidates.extend(
+            [
+                meipass_root / "storage" / "migrations",
+                meipass_root / "resources" / "storage" / "migrations",
+            ]
+        )
+
+    # Packaged portable/install mode may place resources beside the executable.
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        candidates.extend(
+            [
+                exe_dir / "resources" / "storage" / "migrations",
+                exe_dir / "storage" / "migrations",
+            ]
+        )
+
+    # Dev/source-tree mode.
     repo_root = find_repo_root()
-    return repo_root / "storage" / "migrations"
+    candidates.extend(
+        [
+            repo_root / "storage" / "migrations",
+            Path.cwd().resolve() / "resources" / "storage" / "migrations",
+            Path.cwd().resolve() / "storage" / "migrations",
+        ]
+    )
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    searched = "\n".join(f"  - {candidate}" for candidate in candidates)
+    raise FileNotFoundError(
+        "Migration directory does not exist. Searched:\n"
+        f"{searched}"
+    )
 
 
 def find_repo_root() -> Path:
-    current = Path(__file__).resolve()
+    search_roots: list[Path] = []
 
-    for parent in current.parents:
-        if (parent / "package.json").exists() and (parent / "engine").exists():
-            return parent
+    try:
+        search_roots.append(Path(__file__).resolve())
+    except Exception:
+        pass
 
-    return current.parents[4]
+    try:
+        search_roots.append(Path.cwd().resolve())
+    except Exception:
+        pass
+
+    for start in search_roots:
+        for parent in [start, *start.parents]:
+            if (parent / "package.json").exists() and (parent / "engine").exists():
+                return parent
+
+    return Path.cwd().resolve()
 
 
 def now_iso() -> str:
