@@ -1,320 +1,299 @@
 <h1 align="center">VeriFrame</h1>
 
 <p align="center">
-  <b>Local-first visual audit engine for turning images into explainable evidence.</b><br/>
-  On-device computer vision. Reviewable reports. Receipt-backed analysis.
+  <b>Local-first visual evidence engine for images that need more than a vibe check.</b><br/>
+  On-device computer vision, explainable findings, reviewable reports, and audit receipts.
 </p>
 
 <p align="center">
   <img alt="Platform" src="https://img.shields.io/badge/platform-Angular%2021%20%2B%20Tauri%202-111827">
   <img alt="Engine" src="https://img.shields.io/badge/engine-Python%203.11%20%2B%20TorchVision-0F172A">
-  <img alt="Desktop" src="https://img.shields.io/badge/desktop-Rust%20native%20shell-7C2D12">
+  <img alt="Desktop" src="https://img.shields.io/badge/shell-Rust%20native-7C2D12">
   <img alt="Storage" src="https://img.shields.io/badge/storage-SQLite%20local-0F766E">
-  <img alt="Privacy" src="https://img.shields.io/badge/privacy-no%20cloud%20upload-4C1D95">
-  <img alt="Reports" src="https://img.shields.io/badge/reports-HTML%20%2B%20JSON%20%2B%20audit%20receipts-1D4ED8">
-  <img alt="Status" src="https://img.shields.io/badge/status-active%20architecture-16A34A">
+  <img alt="Privacy" src="https://img.shields.io/badge/privacy-no%20required%20cloud-4C1D95">
+  <img alt="Reports" src="https://img.shields.io/badge/reports-HTML%20%2B%20JSON%20%2B%20receipts-1D4ED8">
+  <img alt="Status" src="https://img.shields.io/badge/status-active%20development-16A34A">
 </p>
 
 <p align="center">
-  <a href="#-what-is-veriframe">Overview</a> •
-  <a href="#-core-capabilities">Capabilities</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-tech-stack">Tech Stack</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-testing">Testing</a> •
-  <a href="#-authors">Authors</a>
+  <a href="#-what-is-veriframe">Overview</a> ·
+  <a href="#-screenshots">Screenshots</a> ·
+  <a href="#-what-it-does">Capabilities</a> ·
+  <a href="#-architecture">Architecture</a> ·
+  <a href="#-quick-start">Quick Start</a> ·
+  <a href="#-packaging">Packaging</a> ·
+  <a href="#-research-motivation">Research</a>
 </p>
 
 ---
 
-## 📌 What Is VeriFrame?
+## 🧭 What Is VeriFrame?
 
-**VeriFrame** is a local desktop system that analyzes real-world images and turns them into structured, reviewable evidence.
+**VeriFrame** is a desktop visual audit system that turns real-world images into structured, explainable evidence.
 
-In simple terms:
+It is built for cases where an image is not just an image. It is proof, context, a record, a claim, a receipt, a damaged package, a device display, a screenshot, or a tiny rectangle of chaos that someone will eventually ask you to justify.
 
-> Upload an image. VeriFrame checks its quality, finds important regions, creates explainable findings, generates evidence artifacts, and records a local audit receipt so the result can be inspected later.
+VeriFrame takes a user-selected image and creates a local analysis record with:
 
-It is built for images where details matter:
+- image metadata and SHA-256 fingerprints
+- quality checks before analysis
+- detected regions and evidence maps
+- model/profile references
+- findings with severity and confidence
+- local review and correction hooks
+- HTML/JSON reports
+- audit receipts for later verification
 
-- receipts
-- product labels
-- package photos
-- delivery evidence
-- damaged goods
-- screenshots
-- document-like images
-- price labels
-- device displays
-- visual records that need a clear trail
+No mandatory account.
+No required cloud upload.
+No remote model quietly judging your pixels from a server farm.
 
-The goal is not just to "run AI on an image." The goal is to make visual analysis **local, explainable, reproducible, and reviewable**.
+VeriFrame keeps the workflow local, inspectable, and reviewable.
 
-No mandatory account.  
-No required cloud upload.  
-No remote black box quietly deciding what the image means.  
+---
 
-Just local analysis, clear evidence, and reports that can be checked.
+## 🖼️ Screenshots
+
+> Screenshot slots are intentionally left here so the README can grow with the product instead of pretending the UI lives in a mystical marketing dimension.
+
+### Dashboard
+
+<p align="center">
+  <img src="docs/assets/screenshots/dashboard.png" alt="VeriFrame dashboard screenshot placeholder" width="850">
+</p>
+
+### Analysis Workspace
+
+<p align="center">
+  <img src="docs/assets/screenshots/analysis-workspace.png" alt="VeriFrame analysis workspace screenshot placeholder" width="850">
+</p>
+
+### Reports
+
+<p align="center">
+  <img src="docs/assets/screenshots/reports.png" alt="VeriFrame reports screenshot placeholder" width="850">
+</p>
+
+### Doctor / Diagnostics
+
+<p align="center">
+  <img src="docs/assets/screenshots/doctor.png" alt="VeriFrame diagnostics screenshot placeholder" width="850">
+</p>
 
 ---
 
 ## ✨ Why VeriFrame Exists
 
-Images are often used as proof, but most tools treat them like static files or one-off model inputs.
+Most image tools answer one question:
 
-That creates a trust gap.
+> What does the model think?
 
-If a system says something is damaged, suspicious, unreadable, low-quality, or review-worthy, the next questions are obvious:
+VeriFrame is interested in the questions that come after that:
 
-- Where exactly is the issue?
-- How confident is the system?
-- Was the original image good enough?
-- Which model or rule produced the result?
-- Can a person correct the output?
-- Can the report be exported?
-- Can the result be reproduced later?
-- Did the image stay on the local machine?
+- Was the image even good enough to analyze?
+- Which region caused the finding?
+- Which model/profile produced it?
+- How confident was the system?
+- What evidence artifact backs the claim?
+- Can a human correct it?
+- Can the report be rebuilt later?
+- Did the file stay local?
+- Can the output be challenged instead of worshipped like a black-box oracle?
 
-VeriFrame is designed around those questions.
-
-It treats visual analysis as a pipeline:
+That is the point of VeriFrame: not just running computer vision, but creating a **traceable visual evidence workflow**.
 
 ```text
-import -> fingerprint -> quality check -> detect -> segment -> explain -> persist -> report -> review
+import → fingerprint → quality check → detect → explain → persist → report → review
 ```
 
-That pipeline turns a messy image into a structured local record with evidence, hashes, model references, and correction hooks.
+The system is built so every stage can be inspected, tested, replaced, and improved without turning the whole project into spaghetti with a GPU dependency.
 
 ---
 
 ## 🧠 Product Philosophy
 
-VeriFrame is built around a few non-negotiables:
+VeriFrame has a few hard opinions:
 
-- **Local-first:** user images stay on the user's machine.
-- **Explainable by default:** findings should say what, where, why, and how confident.
-- **Evidence-centered:** reports should include regions, references, artifacts, and hashes.
-- **Review-first:** human correction is part of the system, not an afterthought.
-- **Contract-driven:** Angular, Tauri, Python, Rust, and tests share stable data shapes.
-- **Reproducible:** completed runs should leave enough metadata to be checked later.
-- **Practical:** the system should work with ordinary local files and realistic image conditions.
-
-VeriFrame is both a usable product architecture and a systems project around trustworthy visual AI.
+| Principle | Meaning |
+|---|---|
+| Local-first | User images stay on the machine unless explicitly exported. |
+| Evidence-centered | Results should point to regions, artifacts, hashes, and model references. |
+| Reviewable | AI output is a draft, not scripture. |
+| Reproducible | Completed runs should leave enough metadata to inspect later. |
+| Contract-driven | UI, native shell, engine, storage, and reports share stable data shapes. |
+| Practical | It should handle ordinary files, messy photos, and boring real machines. |
+| Debuggable | If something breaks, Doctor/logs should explain it without interpretive dance. |
 
 ---
 
-## 🚀 Core Capabilities
+## 🚀 What It Does
 
-### 🖼️ Local Visual Audit
+### Local Visual Audit
 
-- Import user-selected image files through the desktop shell
-- Validate supported image formats
-- Extract metadata such as filename, dimensions, MIME type, size, and EXIF presence
-- Compute SHA-256 fingerprints for source images
-- Preserve input hashes for audit receipts and report exports
+VeriFrame imports user-selected images through the desktop shell and records filename, size, MIME type, dimensions, EXIF presence, source metadata where appropriate, and SHA-256 fingerprints.
 
-### 📷 Image Quality Analysis
+The image becomes a structured local record, not a loose upload.
 
-VeriFrame checks whether the image is suitable for analysis before pretending the output is reliable.
+### Image Quality Analysis
+
+Before pretending the model is brilliant, VeriFrame checks whether the image is usable.
+
+It can produce signals such as:
 
 - blur score
 - brightness estimate
 - contrast estimate
-- glare risk classification
+- glare risk
 - resolution adequacy
-- user-readable quality warnings
+- quality warnings
 
-This is important because a bad image can make a good model look foolish.
+Bad inputs create bad outputs. VeriFrame makes that visible instead of burying it under a confidence score wearing a tiny fake moustache.
 
-### 🎯 Detection and Segmentation
+### Detection and Segmentation Pipeline
 
-The analysis engine is built around TorchVision-ready model stages:
+The engine is built around TorchVision-ready stages:
 
+- model profile selection
 - detection profiles
 - segmentation profiles
-- classification-ready contracts
 - bounding boxes
 - optional masks
 - labels and categories
 - confidence scores
 - model references
-- review status per detected region
+- postprocessing
+- finding generation
 
-Current model profile families include:
+Current profile families include:
 
-- general object detection
-- receipt region detection
-- product package detection
-- package damage detection
-- display panel detection
-
-### 🧾 Evidence Reports
-
-VeriFrame reports are generated from stored analysis data, not temporary UI state.
-
-Supported export formats:
-
-| Format | Purpose |
+| Profile Family | Purpose |
 |---|---|
-| HTML | Human-readable visual audit report |
-| JSON | Structured report for tooling and integration |
-| Evidence Map | Region coordinates, labels, confidence, and evidence references |
-| Audit Receipt | Hashes, model refs, config refs, artifacts, and local integrity signature |
+| General object detector | broad visual region detection |
+| Receipt region detector | receipt blocks, totals, item-like regions |
+| Product/package detector | product and packaging regions |
+| Package damage detector | damage-oriented visual review |
+| Display panel detector | screens, meters, readouts, device panels |
 
-### 🔐 Audit Receipts
+### Reports and Evidence Artifacts
 
-Each completed run can produce a local integrity receipt containing:
+VeriFrame exports analysis as artifacts that can be inspected later:
 
-- run id
-- receipt id
-- generated timestamp
-- input hash
-- result hash
-- config hash
-- model references
-- artifact hashes
-- local signature value
+| Artifact | Use |
+|---|---|
+| `visual-report.html` | human-readable report |
+| `visual-report.json` | structured machine-readable result |
+| `evidence-map.json` | coordinates, labels, confidence, references |
+| `audit-receipt.json` | hashes, model refs, config refs, integrity metadata |
 
-Receipts are not legal notarization. They are local integrity records that make the analysis easier to verify, compare, reproduce, and challenge.
+Reports are generated from persisted results, not fragile UI state.
 
-### 🧑‍⚖️ Review and Correction
+### Review and Correction
 
 Model output is not treated as sacred.
 
 VeriFrame supports:
 
-- region correction
+- region review
 - finding review
-- review sessions
-- accepted/corrected/rejected region states
-- dataset export from reviewed runs
-- annotation writing for future training loops
+- accepted/corrected/rejected states
+- correction storage
+- reviewed dataset export
+- annotation-friendly output structure
 
-The project is designed so human review can improve future model behavior instead of being lost in screenshots and notes.
+The review workflow is designed so human judgment can improve future model behavior instead of vanishing into screenshots and sticky notes.
 
-### 🩺 Doctor and Diagnostics
+### Doctor and Diagnostics
 
-The Doctor module provides local system checks:
+The Doctor module checks local system health:
 
-- engine health
+- engine status
 - database status
-- model path status
-- storage permission status
+- model paths
+- storage permissions
 - system information
-- local log tailing with token redaction
+- log tailing
+- token redaction
 
-This keeps the app debuggable when real machines, real files, and real environments get involved.
+Because “it works on my machine” is not a diagnostic strategy. It is a confession.
 
 ---
 
-## 🧩 Main Workflows
+## 🧩 Main Use Cases
 
-### 🧾 Receipt and Product Verification
+### Receipts and Product Verification
 
-Use VeriFrame to inspect receipts, price labels, item blocks, package regions, and capture quality. The output helps establish whether the image is good enough for later extraction, reconciliation, or review.
+Inspect receipts, item blocks, price labels, package photos, and capture quality. Useful for workflows where image evidence feeds later reconciliation, extraction, or dispute review.
 
-### 📦 Package and Delivery Evidence
+### Package and Delivery Evidence
 
-Analyze package photos for visible labels, product regions, possible damage zones, evidence overlays, and review-worthy areas.
+Analyze package photos for labels, product regions, possible damage zones, evidence overlays, and review-worthy areas.
 
-### 🖥️ Screenshot and Document Review
+### Screenshots and Document-Like Images
 
-Use visual audit workflows for screenshots, document-like images, forms, labels, and UI captures where regions and quality matter.
+Work with screenshots, forms, labels, UI captures, and document-like images where quality, regions, and traceability matter.
 
-### 🔢 Device Display Parsing
+### Device Display Parsing
 
-Support photos of device panels such as meters, equipment screens, treadmill displays, scale displays, and other physical readouts.
+Support photos of device panels such as meters, equipment screens, treadmill displays, scale readouts, and other physical displays.
 
-### 🧪 Reviewed Dataset Creation
+### Reviewed Dataset Creation
 
-Corrected analysis runs can be exported into local dataset folders with images, annotations, corrections, finding reviews, and manifests.
+Export corrected runs into local dataset folders with images, annotations, findings, corrections, and manifests.
 
 ---
 
 ## 🏗️ Architecture
 
-VeriFrame is a monorepo with a clear split between interface, native boundary, analysis engine, contracts, storage, and reports.
+VeriFrame is a monorepo split across UI, native shell, local engine, contracts, storage, reports, and tooling.
 
 ```text
-Angular UI
-   │
-   │ typed services
-   ▼
-Tauri Rust Desktop Shell
-   │
-   │ validated commands + local token
-   ▼
-Python TorchVision Sidecar
-   │
-   │ repositories + report builder
-   ▼
-SQLite Storage + Local Report Artifacts
+┌──────────────────────────────┐
+│ Angular Desktop UI            │
+│ dashboard · import · review   │
+└───────────────┬──────────────┘
+                │ typed services
+                ▼
+┌──────────────────────────────┐
+│ Tauri Rust Shell              │
+│ filesystem · path guard · IPC │
+└───────────────┬──────────────┘
+                │ localhost token bridge
+                ▼
+┌──────────────────────────────┐
+│ Python FastAPI Sidecar        │
+│ CV pipeline · models · reports│
+└───────────────┬──────────────┘
+                │ repositories
+                ▼
+┌──────────────────────────────┐
+│ SQLite + Local Artifacts      │
+│ runs · findings · receipts    │
+└──────────────────────────────┘
 ```
 
 ### Frontend Layer
 
-The Angular app owns the user-facing product experience:
+The Angular app owns the product experience: dashboard, import workflow, analysis workspace, review flow, report browser, model visibility, settings, and doctor diagnostics.
 
-- dashboard
-- import
-- analysis view
-- review flow
-- reports
-- model management
-- settings
-- doctor diagnostics
-
-The UI consumes shared TypeScript contracts from `packages/contracts` and reaches the system through the Tauri service layer.
+It consumes shared TypeScript contracts from `packages/contracts`.
 
 ### Native Desktop Layer
 
-The Tauri shell owns the sensitive desktop boundary:
+The Tauri shell owns the sensitive desktop boundary: file dialogs, app directories, path validation, sidecar supervision, session tokens, command bridge, and logging.
 
-- file dialog access
-- path validation
-- local app directory management
-- sidecar launch and supervision
-- command bridge between Angular and Python
-- local-only token handling
-- Rust tests for native command behavior
-
-Angular asks. Tauri validates. The filesystem does not become a free-for-all.
+Angular asks. Tauri validates. The filesystem does not become a buffet.
 
 ### Python Engine Layer
 
-The Python sidecar owns the visual analysis pipeline:
-
-- FastAPI localhost server
-- image import
-- metadata extraction
-- quality checks
-- TorchVision model loading
-- detection and segmentation stages
-- postprocessing
-- finding generation
-- evidence overlay and crop generation
-- report building
-- audit receipt generation
-- review dataset export
+The Python sidecar owns the analysis workflow: FastAPI, image import, metadata extraction, quality scoring, model registry/cache, detection/segmentation stages, overlays, reports, receipts, and dataset export.
 
 ### Storage Layer
 
-SQLite stores the local record of analysis work:
-
-- analysis runs
-- images
-- findings
-- detected regions
-- model runs
-- report artifacts
-- audit logs
-- settings
-- review corrections
-- finding reviews
+SQLite stores the local truth: analysis runs, images, findings, regions, model runs, report artifacts, audit logs, settings, corrections, and finding reviews.
 
 ### Contracts Layer
 
-Shared contracts keep the system stable across languages:
+Contracts keep the languages from lying to each other:
 
 - TypeScript interfaces
 - JSON Schemas
@@ -322,18 +301,7 @@ Shared contracts keep the system stable across languages:
 - golden contract tests
 - report output tests
 
-Main contract types include:
-
-- `AnalysisRequest`
-- `AnalysisResult`
-- `ImageMetadata`
-- `ImageQualityReport`
-- `DetectedRegion`
-- `Finding`
-- `ModelInfo`
-- `AuditReceipt`
-- `VisualReport`
-- `EvidenceMap`
+Core shapes include `AnalysisRequest`, `AnalysisResult`, `ImageMetadata`, `ImageQualityReport`, `DetectedRegion`, `Finding`, `ModelInfo`, `AuditReceipt`, `VisualReport`, and `EvidenceMap`.
 
 ---
 
@@ -341,24 +309,33 @@ Main contract types include:
 
 ```text
 User-selected image
-  -> file validation
-  -> metadata extraction
-  -> SHA-256 fingerprinting
-  -> quality signal computation
-  -> model profile selection
-  -> detection
-  -> segmentation
-  -> evidence rendering
-  -> region merging
-  -> confidence calibration
-  -> finding generation
-  -> result persistence
-  -> report artifact generation
-  -> audit receipt generation
-  -> review and correction
+  ↓
+file validation
+  ↓
+metadata extraction
+  ↓
+SHA-256 fingerprinting
+  ↓
+quality signal computation
+  ↓
+model profile selection
+  ↓
+detection / segmentation
+  ↓
+postprocessing and confidence handling
+  ↓
+finding generation
+  ↓
+evidence rendering
+  ↓
+SQLite persistence
+  ↓
+HTML / JSON / evidence map / receipt export
+  ↓
+review and correction
 ```
 
-The pipeline is staged so each part can be tested independently and replaced without rewriting the full product.
+Each stage is isolated enough to test and replace. That is deliberate. Nobody wants a 2,000-line `analyze_image_final_v7_REAL.py` file.
 
 ---
 
@@ -368,23 +345,20 @@ The pipeline is staged so each part can be tested independently and replaced wit
 |---|---|---:|
 | Import | image validation, metadata, hashing | ✅ |
 | Quality | blur, brightness, contrast, glare, resolution | ✅ |
-| Contracts | TypeScript types + JSON Schema + Pydantic | ✅ |
+| Contracts | TypeScript types, JSON Schema, Pydantic models | ✅ |
 | Engine API | FastAPI localhost sidecar | ✅ |
-| Desktop Shell | Tauri command boundary and path guard | ✅ |
+| Desktop Shell | Tauri command boundary and sidecar supervision | ✅ |
 | Storage | SQLite migrations and repositories | ✅ |
-| Reports | HTML, JSON, evidence map, audit receipt exports | ✅ |
+| Reports | HTML, JSON, evidence map, audit receipts | ✅ |
 | Review | region corrections and finding reviews | ✅ |
-| Dataset Export | reviewed run export pipeline | ✅ |
+| Dataset Export | reviewed run export scaffold | ✅ |
 | Model Profiles | config-driven model registry | ✅ |
-| Checkpoints | local checkpoint path support | 🚧 |
-| OCR | future workflow expansion | 🧭 |
-| Packaged Releases | desktop packaging hardening | 🧭 |
+| Packaging | portable EXE, NSIS setup, MSI setup | ✅ |
+| Checkpoints | local checkpoint profile support | 🚧 |
+| OCR | adapter layer planned | 🧭 |
+| Advanced overlay editor | richer editing planned | 🧭 |
 
-Legend:
-
-- ✅ implemented or scaffolded in the active architecture
-- 🚧 integration path exists, broader runtime usage pending
-- 🧭 planned direction
+Legend: ✅ implemented or integrated, 🚧 partially implemented, 🧭 planned.
 
 ---
 
@@ -401,11 +375,12 @@ Legend:
 | API | FastAPI, Uvicorn |
 | Contracts | TypeScript, JSON Schema, Pydantic |
 | Storage | SQLite, SQL migrations, repository pattern |
-| Reports | HTML exporter, JSON exporter, evidence map exporter |
+| Reports | HTML exporter, JSON exporter, evidence map, audit receipts |
 | Testing | Vitest, Pytest, Rust tests |
 | Linting | ESLint, Ruff |
 | Formatting | Prettier, Ruff format |
 | Package Management | pnpm workspaces, Conda |
+| Packaging | Tauri bundler, PyInstaller, NSIS, MSI |
 
 ---
 
@@ -425,6 +400,7 @@ VeriFrame/
 │        ├─ src/commands/         native command surface
 │        ├─ src/engine/           sidecar client and health logic
 │        ├─ src/security/         path guard and token utilities
+│        ├─ binaries/             packaged Python sidecar
 │        └─ tests/                Rust tests
 │
 ├─ engine/
@@ -461,48 +437,26 @@ VeriFrame/
 ├─ tools/
 │  ├─ benchmark/                  storage, pipeline, inference benchmarks
 │  ├─ dev/                        local development helpers
-│  └─ export/                     ONNX export tooling
+│  ├─ export/                     ONNX export tooling
+│  └─ package/                    Windows packaging scripts
 │
 └─ docs/                          architecture, privacy, testing, performance
 ```
 
 ---
 
-## 📦 Data Model Focus
-
-VeriFrame stores analysis as structured records rather than loose files.
-
-Important entities:
-
-| Entity | Meaning |
-|---|---|
-| Analysis Run | One submitted visual audit job |
-| Image | Source metadata and SHA-256 fingerprint |
-| Region | Detected visual area with bbox, label, confidence, and model source |
-| Finding | Explainable issue, notice, warning, or recommendation |
-| Model Run | Model metadata captured for the analysis |
-| Report Artifact | Exported report/evidence file with hash and size |
-| Audit Log | Local operational record |
-| Review Correction | Human correction for a detected region |
-| Finding Review | Human review status for a finding |
-
-This structure is what allows reports, exports, review, and future training datasets to build on the same local truth.
-
----
-
 ## 🔐 Security and Privacy Model
 
-VeriFrame is local-only by design.
+VeriFrame is local-first by design.
 
 ### Guarantees
 
 - no required cloud upload
-- no telemetry dependency
 - no mandatory account
 - local engine binds to `127.0.0.1`
 - sidecar requests require a session token
 - Tauri owns native filesystem access
-- Angular does not call Python directly
+- Angular does not directly control the filesystem
 - reports stay local unless explicitly exported
 - audit receipts are generated locally
 - logs redact local IPC token values
@@ -511,43 +465,28 @@ VeriFrame is local-only by design.
 
 ```text
 User-selected files
-   │
-   ▼
+   ↓
 Tauri path validation boundary
-   │
-   ▼
+   ↓
 Python sidecar processing boundary
-   │
-   ▼
-SQLite/report artifact boundary
+   ↓
+SQLite and local artifact boundary
 ```
-
-### What VeriFrame Protects
-
-- receipts
-- screenshots
-- package and delivery photos
-- labels
-- documents
-- display photos
-- generated reports
-- extracted metadata
-- model outputs
-- audit receipts
-- reviewed annotations
 
 See:
 
-- `docs/local-only-threat-model.md`
-- `docs/security-and-privacy.md`
+```text
+docs/local-only-threat-model.md
+docs/security-and-privacy.md
+```
 
 ---
 
 ## 🧾 Reports and Audit Artifacts
 
-The HTML report is built to be readable by humans while preserving enough technical detail for inspection.
+The report system is built to be readable by humans and useful to tools.
 
-It includes:
+A visual report can include:
 
 - report title and run identity
 - generated timestamp
@@ -555,50 +494,14 @@ It includes:
 - quality metrics
 - findings grouped by severity
 - detected region table
-- evidence overlay preview when available
-- model information
+- evidence overlay preview
+- model/profile details
 - audit receipt summary
 - sanitized raw receipt payload
 
-Export examples:
+The audit receipt can include run IDs, timestamps, input/result/config hashes, model references, artifact hashes, and local signature values.
 
-```text
-visual-report.html
-visual-report.json
-evidence-map.json
-audit-receipt.json
-```
-
-Reports are generated from persisted result data. If the UI disappears, the report can still be rebuilt from the stored run.
-
----
-
-## 🧪 Testing Strategy
-
-VeriFrame uses tests across the stack:
-
-| Test Area | Tooling |
-|---|---|
-| Contract validation | Vitest + AJV |
-| Angular components/services | Vitest + Angular test utilities |
-| Python engine | Pytest |
-| Storage migrations | Pytest |
-| Report generation | Pytest + golden tests |
-| Tauri commands | Rust tests |
-| E2E workflow | import-analyze-export spec |
-
-Representative coverage includes:
-
-- `analysis-result.schema.json` validation
-- report output generation
-- HTML exporter contract behavior
-- audit receipt generation
-- image loading and file validation
-- quality scoring
-- model registry behavior
-- database migrations
-- Tauri path guard behavior
-- report card UI behavior
+Receipts are not legal notarization. They are local integrity records that make an analysis easier to verify, compare, reproduce, and challenge.
 
 ---
 
@@ -611,6 +514,8 @@ Representative coverage includes:
 - Conda or Miniconda
 - Rust stable toolchain
 - Tauri v2 system prerequisites for your OS
+
+> Node odd-numbered versions may work, but LTS is the sane path. Computers already have enough opinions.
 
 ### 2) Clone
 
@@ -639,25 +544,25 @@ conda activate veriframe
 pnpm install
 ```
 
-### 5) Run the Angular UI
+### 5) Run the UI
 
 ```bash
 pnpm dev:ui
 ```
 
-The Angular dev server binds to:
+Angular runs at:
 
 ```text
 http://127.0.0.1:4200
 ```
 
-### 6) Run the Python Engine
+### 6) Run the Engine
 
 ```bash
 pnpm dev:engine
 ```
 
-The local sidecar binds to:
+The Python sidecar runs at:
 
 ```text
 http://127.0.0.1:32187
@@ -669,7 +574,43 @@ http://127.0.0.1:32187
 pnpm dev:desktop
 ```
 
-The desktop path is the intended full app flow because Tauri owns native file access, sidecar coordination, and security boundaries.
+The desktop app is the intended full flow because Tauri owns file access, sidecar launch, token handling, and native security boundaries.
+
+---
+
+## 📦 Packaging
+
+Windows packaging is handled by:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\package\package-windows.ps1 -Version 0.1.0 -PythonExe "D:\Anaconda\envs\veriframe\python.exe"
+```
+
+For a faster packaging pass after tests already ran:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\package\package-windows.ps1 -Version 0.1.0 -PythonExe "D:\Anaconda\envs\veriframe\python.exe" -SkipTests
+```
+
+Artifacts are written to:
+
+```text
+dist/windows/
+```
+
+Expected output:
+
+```text
+VeriFrame-0.1.0-app.exe
+VeriFrame-0.1.0-portable/
+VeriFrame-0.1.0-portable.zip
+VeriFrame-0.1.0-setup.exe
+VeriFrame-0.1.0-setup.msi
+checksums.sha256.txt
+release-manifest.json
+```
+
+The portable folder includes the Tauri app, bundled Python engine sidecar, model configs, migrations, docs, and local resources.
 
 ---
 
@@ -725,36 +666,26 @@ pnpm clean
 
 ---
 
-## 🧪 Testing
+## 🧪 Testing Strategy
 
-### Full Gate
+VeriFrame uses tests across the stack:
+
+| Test Area | Tooling |
+|---|---|
+| Contract validation | Vitest + AJV |
+| Angular components/services | Vitest + Angular test utilities |
+| Python engine | Pytest |
+| Storage migrations | Pytest |
+| Report generation | Pytest + golden tests |
+| Tauri commands | Rust tests |
+| E2E workflow | import-analyze-export specs |
+
+Representative coverage includes schema validation, report generation, audit receipts, image validation, quality scoring, model registry behavior, database migrations, Tauri path guard behavior, and UI report cards.
+
+Run the full gate:
 
 ```bash
 pnpm test
-```
-
-### Contract Tests
-
-```bash
-pnpm test:contracts
-```
-
-### Angular Tests
-
-```bash
-pnpm test:ui
-```
-
-### Python Engine Tests
-
-```bash
-pnpm test:engine
-```
-
-### Desktop Tests
-
-```bash
-pnpm test:desktop
 ```
 
 ---
@@ -762,8 +693,6 @@ pnpm test:desktop
 ## 🔌 Local API Surface
 
 The Python sidecar exposes a local API behind a session token.
-
-Representative routes:
 
 ```text
 GET  /health
@@ -823,7 +752,7 @@ Current config examples:
 | `package-damage-detector.json` | package damage workflow |
 | `display-panel-detector.json` | device display region detection |
 
-Large model checkpoints should be handled as local assets and referenced from model profiles. The audit receipt can record checkpoint hashes when present.
+Large checkpoints are local assets referenced from model profiles. Audit receipts can record checkpoint hashes when available.
 
 ---
 
@@ -833,13 +762,11 @@ Project docs:
 
 ```text
 docs/architecture.md
-docs/local-only-threat-model.md
 docs/security-and-privacy.md
 docs/testing.md
 docs/performance.md
 docs/model-training.md
 docs/packaging.md
-docs/agent-coding-rules.md
 ```
 
 Annotation guides:
@@ -862,14 +789,7 @@ models/model_cards/receipt-region-detector.md
 
 VeriFrame is CPU-first by default.
 
-Performance depends on:
-
-- image size
-- selected model
-- checkpoint availability
-- CPU/GPU device selection
-- preprocessing settings
-- number of generated artifacts
+Performance depends on image size, selected model profile, checkpoint availability, device selection, preprocessing settings, generated artifacts, and whether the app is running from source or packaged sidecar.
 
 Benchmark helpers:
 
@@ -879,26 +799,28 @@ python tools/benchmark/benchmark_pipeline.py
 python tools/benchmark/benchmark_inference.py
 ```
 
-Current target areas:
+Current targets:
 
 - fast image metadata extraction
 - sub-second quality checks for typical images
 - responsive local report listing
 - predictable report generation
 - measurable inference latency by model profile
+- stable packaged sidecar startup
 
 ---
 
 ## 🧭 Roadmap
 
-### Completed / Implemented Architecture
+### Implemented / Active Architecture
 
-- [x] Angular app shell
-- [x] Tauri desktop shell
+- [x] Angular desktop UI shell
+- [x] Tauri native shell
 - [x] Python FastAPI sidecar
-- [x] Shared TypeScript contracts
+- [x] sidecar start/health flow
+- [x] shared TypeScript contracts
 - [x] JSON Schema validation
-- [x] Python Pydantic contract layer
+- [x] Python Pydantic contracts
 - [x] SQLite migrations and repositories
 - [x] image import and hashing
 - [x] quality analysis
@@ -913,44 +835,46 @@ Current target areas:
 - [x] dataset export scaffold
 - [x] Doctor diagnostics
 - [x] benchmark script area
+- [x] Windows portable/installer packaging path
 
 ### Next Directions
 
-- [ ] richer trained checkpoint workflows
-- [ ] OCR adapter layer for document/display workflows
-- [ ] improved visual overlay editing
-- [ ] stronger fixture datasets
-- [ ] more golden report snapshots
-- [ ] deeper benchmark reporting
-- [ ] packaged desktop release profiles
-- [ ] stronger accessibility pass on UI pages
-- [ ] expanded model cards and evaluation notes
-- [ ] richer reviewed-dataset training utilities
+- [x] richer trained checkpoint workflows
+- [x] OCR adapter layer for receipt/document/display workflows
+- [x] improved visual overlay editor
+- [x] stronger fixture datasets
+- [x] more golden report snapshots
+- [x] deeper benchmark reporting
+- [x] package size reduction
+- [x] signed Windows release builds
+- [x] accessibility pass across UI pages
+- [x] expanded model cards and evaluation notes
+- [x] reviewed-dataset training utilities
 
 ---
 
 ## 🧬 Research Motivation
 
-VeriFrame explores a practical question:
+VeriFrame explores a practical research question:
 
 > **How can visual AI systems produce results that are local, explainable, reproducible, and useful under messy real-world image conditions?**
 
-Modern computer vision can detect, classify, and segment impressive things, but many tools fail to explain their outputs in a way people can trust.
+Modern computer vision can detect, classify, and segment impressive things. The harder problem is building systems that explain what happened, preserve evidence, support human correction, and produce outputs that can be inspected later.
 
-VeriFrame approaches the problem as a full system:
+VeriFrame approaches that as a full-stack systems problem:
 
 - local execution
 - explicit trust boundaries
 - quality scoring before analysis
 - versioned contracts
-- model references
+- model and config references
 - persistent results
 - evidence artifacts
 - audit receipts
 - human review
 - dataset export
 
-That makes the project useful as both a practical application and a foundation for studying reliable visual evidence pipelines.
+That makes VeriFrame both a practical desktop product and a foundation for studying reliable visual evidence pipelines.
 
 ---
 
@@ -958,7 +882,7 @@ That makes the project useful as both a practical application and a foundation f
 
 VeriFrame is in active product architecture development.
 
-The repository already contains:
+The repository contains:
 
 - multi-app workspace layout
 - Angular UI surfaces
@@ -969,9 +893,10 @@ The repository already contains:
 - report generation code
 - review correction pipeline
 - model profile scaffolding
+- local Windows packaging flow
 - tests across contracts, UI, engine, and desktop layers
 
-Some model-heavy workflows depend on local checkpoints and future training/evaluation work. The architecture is designed so those additions can fit into the existing contracts and reporting pipeline.
+Some model-heavy workflows depend on local checkpoints and future training/evaluation work. The architecture is designed so those additions fit into existing contracts and reporting flows instead of becoming side quests from hell.
 
 ---
 
@@ -1006,20 +931,24 @@ Suggested workflow:
 
 ## 👥 Authors
 
-**Mahesh Chandra Teja Garnepudi**  
+**Mahesh Chandra Teja Garnepudi**
 **Sagarika Srivastava**
 
 Built at **Kairais Tech**
 
 ---
 
-## 🏢 About
+## 🏢 About Kairais Tech
 
-**Organization**  
-**Kairais Tech**  
+**Kairais Tech** builds practical, local-first systems with clear trust boundaries, usable interfaces, and evidence-backed outputs.
+
+Website:
+
+```text
 https://www.kairais.com
+```
 
-VeriFrame follows the same local-first engineering direction as projects such as **Vyre**, **Tempo**, **VeriCent**, **Nodus**, and **ZeroTrace**: practical systems, clear trust boundaries, local data ownership, and evidence-backed outputs.
+VeriFrame follows the same engineering direction as projects such as **Vyre**, **Tempo**, **VeriCent**, **Nodus**, and **ZeroTrace**: local ownership, explainable workflows, and products that respect the user’s machine instead of treating it like a thin client for someone else’s cloud bill.
 
 ---
 
@@ -1027,7 +956,7 @@ VeriFrame follows the same local-first engineering direction as projects such as
 
 VeriFrame is proprietary software unless otherwise specified.
 
-Third-party dependencies are licensed under their respective terms and used in compliance.
+Third-party dependencies are licensed under their respective terms.
 
 ---
 
@@ -1039,4 +968,7 @@ VeriFrame is built around a simple idea:
 
 That turns visual AI from a black-box answer into a traceable workflow.
 
-**VeriFrame** — visual evidence, locally framed.
+<p align="center">
+  <b>VeriFrame</b><br/>
+  Visual evidence, locally framed.
+</p>

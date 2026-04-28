@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Literal
 
@@ -59,9 +61,16 @@ class ModelProfileStatus(BaseModel):
 
 class ModelRegistry:
     def __init__(self, config_dir: str | Path | None = None, card_dir: str | Path | None = None) -> None:
-        repo_root = find_repo_root()
-        self.config_dir = Path(config_dir) if config_dir is not None else repo_root / "models" / "configs"
-        self.card_dir = Path(card_dir) if card_dir is not None else repo_root / "models" / "model_cards"
+        self.config_dir = (
+            Path(config_dir).expanduser().resolve()
+            if config_dir is not None
+            else default_model_config_dir()
+        )
+        self.card_dir = (
+            Path(card_dir).expanduser().resolve()
+            if card_dir is not None
+            else default_model_card_dir()
+        )
 
     @classmethod
     def default(cls) -> "ModelRegistry":
@@ -160,11 +169,110 @@ class ModelRegistry:
         )
 
 
+def default_model_config_dir() -> Path:
+    override = os.getenv("VERIFRAME_MODEL_CONFIG_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    candidates = model_resource_candidates("configs")
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    # Return the first candidate so callers get a stable path even if empty.
+    return candidates[0]
+
+
+def default_model_card_dir() -> Path:
+    override = os.getenv("VERIFRAME_MODEL_CARD_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+
+    candidates = model_resource_candidates("model_cards")
+
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir():
+            return candidate
+
+    return candidates[0]
+
+
+def model_resource_candidates(kind: str) -> list[Path]:
+    candidates: list[Path] = []
+
+    # PyInstaller onefile extraction directory.
+    meipass = getattr(sys, "_MEIPASS", None)
+    if meipass:
+        root = Path(meipass).resolve()
+        candidates.extend(
+            [
+                root / "models" / kind,
+                root / "resources" / "models" / kind,
+            ]
+        )
+
+    # Folder beside the packaged executable.
+    if getattr(sys, "frozen", False):
+        exe_dir = Path(sys.executable).resolve().parent
+        candidates.extend(
+            [
+                exe_dir / "resources" / "models" / kind,
+                exe_dir / "models" / kind,
+            ]
+        )
+
+    # Current working directory, useful for portable builds.
+    try:
+        cwd = Path.cwd().resolve()
+        candidates.extend(
+            [
+                cwd / "resources" / "models" / kind,
+                cwd / "models" / kind,
+            ]
+        )
+    except Exception:
+        pass
+
+    # Source-tree development mode.
+    repo_root = find_repo_root()
+    candidates.append(repo_root / "models" / kind)
+
+    # Deduplicate while preserving order.
+    seen: set[str] = set()
+    unique: list[Path] = []
+
+    for candidate in candidates:
+        key = str(candidate).lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(candidate)
+
+    return unique
+
+
 def find_repo_root() -> Path:
-    current = Path(__file__).resolve()
+    search_roots: list[Path] = []
 
-    for parent in current.parents:
-        if (parent / "package.json").exists() and (parent / "engine").exists():
-            return parent
+    try:
+        search_roots.append(Path(__file__).resolve())
+    except Exception:
+        pass
 
-    return current.parents[4]
+    try:
+        search_roots.append(Path.cwd().resolve())
+    except Exception:
+        pass
+
+    if getattr(sys, "frozen", False):
+        try:
+            search_roots.append(Path(sys.executable).resolve())
+        except Exception:
+            pass
+
+    for start in search_roots:
+        for parent in [start, *start.parents]:
+            if (parent / "package.json").exists() and (parent / "engine").exists():
+                return parent
+
+    return Path.cwd().resolve()
